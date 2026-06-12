@@ -1,0 +1,356 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ===== ENUMS =====
+
+enum UserRole {
+  FOUNDER
+  SALES
+  DELIVERY
+  ADMIN
+}
+
+enum CompanyStatus {
+  LEAD
+  PROSPECT
+  ACTIVE_CLIENT
+  PAST_CLIENT
+  DISQUALIFIED
+}
+
+enum CompanySource {
+  MANUAL
+  BASE_UNIFICADA
+  PLACES_API
+  REFERRAL
+  INBOUND
+}
+
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum ServiceType {
+  AI_AUDIT
+  AUTOMATION
+  CUSTOM_SOFTWARE
+  BLOCKCHAIN_WEB3
+  TRAINING
+  RETAINER
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  BLOCKED
+  DONE
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ActivityType {
+  CALL
+  MEETING
+  MESSAGE_SENT
+  MESSAGE_RECEIVED
+  EMAIL
+  NOTE
+  MILESTONE
+  PROPOSAL_SENT
+  CONTRACT_SIGNED
+}
+
+enum ActivityChannel {
+  WHATSAPP
+  PHONE
+  IN_PERSON
+  EMAIL
+  VIDEO_CALL
+  OTHER
+}
+
+enum PipelineStage {
+  LEAD
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  WON
+  LOST
+}
+
+enum AgentActionStatus {
+  SUCCESS
+  ERROR
+  PARTIAL
+}
+
+enum AgentSource {
+  WHATSAPP
+  CRON
+  WEB
+  MANUAL_TEST
+}
+
+enum ReminderStatus {
+  PENDING
+  SENT
+  CANCELLED
+  FAILED
+}
+
+// ===== CORE TABLES =====
+
+model User {
+  id             String   @id @default(uuid()) @db.Uuid
+  email          String   @unique
+  fullName       String   @map("full_name")
+  role           UserRole
+  whatsappNumber String?  @unique @map("whatsapp_number")
+  timezone       String   @default("America/La_Paz")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  assignedCompanies Company[]      @relation("CompanyAssignee")
+  ownedProjects     Project[]      @relation("ProjectOwner")
+  assignedTasks     Task[]         @relation("TaskAssignee")
+  createdTasks      Task[]         @relation("TaskCreator")
+  loggedActivities  Activity[]
+  ownedPipeline     PipelineDeal[]
+  agentRequests     AgentLog[]     @relation("AgentRequester")
+  reminders         Reminder[]
+
+  @@map("users")
+}
+
+model Persona {
+  id               String   @id @default(uuid()) @db.Uuid
+  name             String
+  segment          String
+  description      String   @db.Text
+  painPoints       String[] @map("pain_points")
+  outreachTemplate String   @map("outreach_template") @db.Text
+  language         String   @default("es")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  companies Company[]
+
+  @@map("personas")
+}
+
+model Company {
+  id               String        @id @default(uuid()) @db.Uuid
+  name             String
+  nit              String?       @unique
+  sector           String?
+  city             String?
+  department       String?
+  source           CompanySource @default(MANUAL)
+  status           CompanyStatus @default(LEAD)
+  assignedToId     String?       @map("assigned_to_id") @db.Uuid
+  primaryPersonaId String?       @map("primary_persona_id") @db.Uuid
+  website          String?
+  tags             String[]
+  notes            String?       @db.Text
+  externalId       String?       @map("external_id")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  assignedTo     User?          @relation("CompanyAssignee", fields: [assignedToId], references: [id])
+  primaryPersona Persona?       @relation(fields: [primaryPersonaId], references: [id])
+  contacts       Contact[]
+  projects       Project[]
+  activities     Activity[]
+  pipelineDeals  PipelineDeal[]
+  reminders      Reminder[]
+
+  @@index([status])
+  @@index([assignedToId])
+  @@index([sector])
+  @@index([department])
+  @@map("companies")
+}
+
+model Contact {
+  id        String   @id @default(uuid()) @db.Uuid
+  companyId String   @map("company_id") @db.Uuid
+  fullName  String   @map("full_name")
+  role      String?
+  phone     String?
+  email     String?
+  whatsapp  String?
+  isPrimary Boolean  @default(false) @map("is_primary")
+  notes     String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  company    Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  activities Activity[]
+
+  @@index([companyId])
+  @@map("contacts")
+}
+
+model Project {
+  id            String        @id @default(uuid()) @db.Uuid
+  companyId     String        @map("company_id") @db.Uuid
+  name          String
+  description   String?       @db.Text
+  status        ProjectStatus @default(PLANNING)
+  serviceType   ServiceType   @map("service_type")
+  ownerId       String        @map("owner_id") @db.Uuid
+  startDate     DateTime?     @map("start_date")
+  targetEndDate DateTime?     @map("target_end_date")
+  actualEndDate DateTime?     @map("actual_end_date")
+  valueBob      Decimal?      @map("value_bob") @db.Decimal(12, 2)
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  company    Company    @relation(fields: [companyId], references: [id])
+  owner      User       @relation("ProjectOwner", fields: [ownerId], references: [id])
+  tasks      Task[]
+  activities Activity[]
+  reminders  Reminder[]
+
+  @@index([status])
+  @@index([ownerId])
+  @@index([companyId])
+  @@map("projects")
+}
+
+model Task {
+  id             String       @id @default(uuid()) @db.Uuid
+  projectId      String?      @map("project_id") @db.Uuid
+  assigneeId     String       @map("assignee_id") @db.Uuid
+  title          String
+  description    String?      @db.Text
+  status         TaskStatus   @default(TODO)
+  priority       TaskPriority @default(MEDIUM)
+  dueDate        DateTime?    @map("due_date")
+  completedAt    DateTime?    @map("completed_at")
+  createdById    String?      @map("created_by_id") @db.Uuid
+  createdByAgent Boolean      @default(false) @map("created_by_agent")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  project   Project?   @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  assignee  User       @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  createdBy User?      @relation("TaskCreator", fields: [createdById], references: [id])
+  reminders Reminder[]
+
+  @@index([assigneeId, status])
+  @@index([dueDate])
+  @@index([projectId])
+  @@map("tasks")
+}
+
+model Activity {
+  id            String          @id @default(uuid()) @db.Uuid
+  companyId     String          @map("company_id") @db.Uuid
+  contactId     String?         @map("contact_id") @db.Uuid
+  projectId     String?         @map("project_id") @db.Uuid
+  type          ActivityType
+  channel       ActivityChannel @default(OTHER)
+  description   String          @db.Text
+  occurredAt    DateTime        @default(now()) @map("occurred_at")
+  loggedById    String?         @map("logged_by_id") @db.Uuid
+  loggedByAgent Boolean         @default(false) @map("logged_by_agent")
+  createdAt     DateTime        @default(now()) @map("created_at")
+
+  company  Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  contact  Contact? @relation(fields: [contactId], references: [id])
+  project  Project? @relation(fields: [projectId], references: [id])
+  loggedBy User?    @relation(fields: [loggedById], references: [id])
+
+  @@index([companyId, occurredAt(sort: Desc)])
+  @@index([projectId])
+  @@map("activities")
+}
+
+model PipelineDeal {
+  id                String        @id @default(uuid()) @db.Uuid
+  companyId         String        @map("company_id") @db.Uuid
+  title             String
+  stage             PipelineStage @default(LEAD)
+  valueBob          Decimal?      @map("value_bob") @db.Decimal(12, 2)
+  probability       Int?          @db.SmallInt
+  expectedCloseDate DateTime?     @map("expected_close_date")
+  actualCloseDate   DateTime?     @map("actual_close_date")
+  lostReason        String?       @map("lost_reason")
+  ownerId           String        @map("owner_id") @db.Uuid
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  company Company @relation(fields: [companyId], references: [id])
+  owner   User    @relation(fields: [ownerId], references: [id])
+
+  @@index([stage])
+  @@index([ownerId])
+  @@map("pipeline_deals")
+}
+
+// ===== AGENT TABLES =====
+
+model AgentLog {
+  id                String            @id @default(uuid()) @db.Uuid
+  requestedByUserId String?           @map("requested_by_user_id") @db.Uuid
+  source            AgentSource
+  toolCalled        String            @map("tool_called")
+  actionType        String            @map("action_type")
+  requestSummary    String            @map("request_summary") @db.Text
+  responseSummary   String            @map("response_summary") @db.Text
+  entitiesAffected  Json?             @map("entities_affected")
+  status            AgentActionStatus
+  errorMessage      String?           @map("error_message") @db.Text
+  durationMs        Int?              @map("duration_ms")
+  tokensUsed        Int?              @map("tokens_used")
+  createdAt         DateTime          @default(now()) @map("created_at")
+
+  requestedBy User? @relation("AgentRequester", fields: [requestedByUserId], references: [id])
+
+  @@index([createdAt(sort: Desc)])
+  @@index([requestedByUserId, createdAt(sort: Desc)])
+  @@index([status])
+  @@map("agent_log")
+}
+
+model Reminder {
+  id               String         @id @default(uuid()) @db.Uuid
+  targetUserId     String         @map("target_user_id") @db.Uuid
+  relatedCompanyId String?        @map("related_company_id") @db.Uuid
+  relatedProjectId String?        @map("related_project_id") @db.Uuid
+  relatedTaskId    String?        @map("related_task_id") @db.Uuid
+  message          String         @db.Text
+  triggerAt        DateTime       @map("trigger_at")
+  status           ReminderStatus @default(PENDING)
+  sentAt           DateTime?      @map("sent_at")
+  createdByAgent   Boolean        @default(false) @map("created_by_agent")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  targetUser     User     @relation(fields: [targetUserId], references: [id])
+  relatedCompany Company? @relation(fields: [relatedCompanyId], references: [id])
+  relatedProject Project? @relation(fields: [relatedProjectId], references: [id])
+  relatedTask    Task?    @relation(fields: [relatedTaskId], references: [id])
+
+  @@index([triggerAt, status])
+  @@index([targetUserId])
+  @@map("reminders")
+}
