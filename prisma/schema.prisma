@@ -117,7 +117,7 @@ enum ReminderStatus {
 // ===== CORE TABLES =====
 
 model User {
-  id             String   @id @default(uuid()) @db.Uuid
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email          String   @unique
   fullName       String   @map("full_name")
   role           UserRole
@@ -140,7 +140,7 @@ model User {
 }
 
 model Persona {
-  id               String   @id @default(uuid()) @db.Uuid
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name             String
   segment          String
   description      String   @db.Text
@@ -156,7 +156,7 @@ model Persona {
 }
 
 model Company {
-  id               String        @id @default(uuid()) @db.Uuid
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name             String
   nit              String?       @unique
   sector           String?
@@ -189,7 +189,7 @@ model Company {
 }
 
 model Contact {
-  id        String   @id @default(uuid()) @db.Uuid
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   companyId String   @map("company_id") @db.Uuid
   fullName  String   @map("full_name")
   role      String?
@@ -209,7 +209,7 @@ model Contact {
 }
 
 model Project {
-  id            String        @id @default(uuid()) @db.Uuid
+  id            String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   companyId     String        @map("company_id") @db.Uuid
   name          String
   description   String?       @db.Text
@@ -236,7 +236,7 @@ model Project {
 }
 
 model Task {
-  id             String       @id @default(uuid()) @db.Uuid
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   projectId      String?      @map("project_id") @db.Uuid
   assigneeId     String       @map("assignee_id") @db.Uuid
   title          String
@@ -262,7 +262,7 @@ model Task {
 }
 
 model Activity {
-  id            String          @id @default(uuid()) @db.Uuid
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   companyId     String          @map("company_id") @db.Uuid
   contactId     String?         @map("contact_id") @db.Uuid
   projectId     String?         @map("project_id") @db.Uuid
@@ -285,7 +285,7 @@ model Activity {
 }
 
 model PipelineDeal {
-  id                String        @id @default(uuid()) @db.Uuid
+  id                String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   companyId         String        @map("company_id") @db.Uuid
   title             String
   stage             PipelineStage @default(LEAD)
@@ -309,7 +309,7 @@ model PipelineDeal {
 // ===== AGENT TABLES =====
 
 model AgentLog {
-  id                String            @id @default(uuid()) @db.Uuid
+  id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   requestedByUserId String?           @map("requested_by_user_id") @db.Uuid
   source            AgentSource
   toolCalled        String            @map("tool_called")
@@ -332,7 +332,7 @@ model AgentLog {
 }
 
 model Reminder {
-  id               String         @id @default(uuid()) @db.Uuid
+  id               String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   targetUserId     String         @map("target_user_id") @db.Uuid
   relatedCompanyId String?        @map("related_company_id") @db.Uuid
   relatedProjectId String?        @map("related_project_id") @db.Uuid

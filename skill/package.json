@@ -1,0 +1,19 @@
+{
+  "name": "skylos-pm",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Skylos PM Agent — OpenClaw skill bundle. 17 tools over Supabase.",
+  "main": "scripts/lib/supabase.js",
+  "scripts": {
+    "tool": "node"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "date-fns": "^4.1.0",
+    "date-fns-tz": "^3.2.0",
+    "yargs": "^17.7.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
