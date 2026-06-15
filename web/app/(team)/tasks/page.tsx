@@ -1,11 +1,26 @@
-import { ComingSoon } from "@/components/pm/page-shell";
+import { redirect } from "next/navigation";
+import { currentUser } from "@/lib/auth/current-user";
+import { getMyTasks } from "@/lib/data/tasks";
+import { TasksQueue } from "@/components/pm/tasks-queue";
+import { t } from "@/lib/i18n/es";
 
-export default function TasksPage() {
+export default async function TasksPage() {
+  const user = await currentUser();
+  if (!user) redirect("/login");
+  const tasks = await getMyTasks(user.id);
+  const openCount = tasks.filter((row) => row.status !== "DONE").length;
+
   return (
-    <ComingSoon
-      title="Tareas"
-      description="Tu cola personal: abiertas, en curso, bloqueadas y hechas. En construcción."
-      crystal="crystal-cylinder-blue.png"
-    />
+    <div className="min-h-screen p-8 lg:p-10">
+      <header className="mb-6 flex items-end justify-between">
+        <h1 className="font-display text-4xl tracking-tight">
+          {t.tasks.title}
+        </h1>
+        <span className="text-xs text-[var(--brand-fg-muted)]">
+          {t.tasks.countOpen(openCount)}
+        </span>
+      </header>
+      <TasksQueue initialTasks={tasks} />
+    </div>
   );
 }
