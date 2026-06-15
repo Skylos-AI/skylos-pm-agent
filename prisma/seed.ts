@@ -38,8 +38,8 @@ const prisma = new PrismaClient();
 // before any demo. WhatsApp numbers must stay E.164 to pass validation.
 const USER_SEED = [
   {
-    email: "jhonny@skylos.io",
-    fullName: "Jhonny Placeholder",
+    email: "jhonny.r.lopz@gmail.com",
+    fullName: "Jhonny López",
     role: UserRole.FOUNDER,
     whatsappNumber: "+59170000001",
   },

@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+:root {
+  --brand-bg: #f2f4f7;
+  --brand-surface: #ffffff;
+  --brand-fg: #1a202c;
+  --brand-fg-muted: #4a5568;
+  --brand-border: #e2e8f0;
+  --brand-blue: #2d5bff;
+  --brand-magenta: #e536a8;
+  --brand-cyan: #29d6e5;
+  --brand-gradient: linear-gradient(
+    115deg,
+    #2d5bff 0%,
+    #e536a8 50%,
+    #29d6e5 100%
+  );
+}
+
+@theme inline {
+  --color-background: var(--brand-bg);
+  --color-foreground: var(--brand-fg);
+  --color-surface: var(--brand-surface);
+  --color-muted: var(--brand-fg-muted);
+  --color-border: var(--brand-border);
+  --color-blue: var(--brand-blue);
+  --color-magenta: var(--brand-magenta);
+  --color-cyan: var(--brand-cyan);
+  --font-display: var(--font-display);
+  --font-sans: var(--font-body);
+}
+
+html,
+body {
+  background: var(--brand-bg);
+  color: var(--brand-fg);
+  font-family: var(--font-body), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-display {
+  font-family: var(--font-display), system-ui, sans-serif;
+  letter-spacing: 0.02em;
+}
+
+.brand-gradient {
+  background: var(--brand-gradient);
+}
+
+.brand-gradient-text {
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
