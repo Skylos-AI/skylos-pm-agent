@@ -64,7 +64,7 @@ export function NavSidebar({
               href={item.href}
               className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition ${
                 active
-                  ? "bg-[var(--brand-blue)] text-white shadow-sm"
+                  ? "text-white shadow-md brand-gradient"
                   : "text-[var(--brand-fg-muted)] hover:bg-[var(--brand-bg)] hover:text-[var(--brand-fg)]"
               }`}
             >

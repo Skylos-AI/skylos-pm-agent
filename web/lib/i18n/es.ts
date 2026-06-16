@@ -176,7 +176,7 @@ export const t = {
     newProjectName: "Nombre",
     newProjectNamePlaceholder: "Ej: AI Audit fase 1",
     newProjectService: "Tipo de servicio",
-    newProjectValue: "Valor (Bs)",
+    newProjectValue: "Valor ($)",
     newProjectTarget: "Fecha objetivo",
     newProjectCreate: "Crear",
     newProjectCancel: "Cancelar",

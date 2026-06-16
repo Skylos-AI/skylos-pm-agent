@@ -18,7 +18,7 @@ export default async function StandupPage() {
     <div className="min-h-screen p-8 lg:p-10 space-y-6">
       <header className="flex items-end justify-between flex-wrap gap-3">
         <div>
-          <h1 className="font-display text-4xl tracking-tight">
+          <h1 className="font-display text-5xl tracking-tight leading-tight">
             {t.standup.title}
           </h1>
           <p className="text-sm text-[var(--brand-fg-muted)] mt-1">

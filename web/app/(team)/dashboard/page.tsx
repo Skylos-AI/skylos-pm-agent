@@ -27,11 +27,11 @@ export default async function DashboardPage() {
           <p className="text-sm text-[var(--brand-fg-muted)] mb-1">
             Hola, {firstName}
           </p>
-          <h1 className="font-display text-4xl tracking-tight">
+          <h1 className="font-display text-5xl tracking-tight leading-tight">
             {t.dashboard.title}
           </h1>
         </div>
-        <span className="text-xs text-[var(--brand-fg-muted)] uppercase tracking-wide">
+        <span className="text-xs text-[var(--brand-fg-muted)] uppercase tracking-wide tabular-nums">
           {formatDate(new Date())}
         </span>
       </header>

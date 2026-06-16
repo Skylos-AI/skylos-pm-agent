@@ -25,7 +25,7 @@ export default async function ProjectsPage({
   return (
     <div className="min-h-screen p-8 lg:p-10">
       <header className="mb-6 flex items-end justify-between">
-        <h1 className="font-display text-4xl tracking-tight">
+        <h1 className="font-display text-5xl tracking-tight leading-tight">
           {t.projects.title}
         </h1>
         <span className="text-xs text-[var(--brand-fg-muted)]">

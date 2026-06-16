@@ -54,7 +54,7 @@ export default async function CompanyDetailPage({
         </Link>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="font-display text-4xl tracking-tight">
+            <h1 className="font-display text-5xl tracking-tight leading-tight">
               {company.name}
             </h1>
             <p className="text-sm text-[var(--brand-fg-muted)] mt-1">
