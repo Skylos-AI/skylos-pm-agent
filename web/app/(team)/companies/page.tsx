@@ -6,6 +6,7 @@ import type { CompanyPhase, CompanyStatus } from "@/lib/types/companies";
 import { CompaniesFilterBar } from "@/components/pm/companies-filter-bar";
 import { CompanyStatusPill } from "@/components/pm/company-status-pill";
 import { PhaseTabs } from "@/components/pm/phase-tabs";
+import { MarkContactedButton } from "@/components/pm/mark-contacted-button";
 import { t } from "@/lib/i18n/es";
 
 function waHref(num: string | null): string | null {
@@ -79,7 +80,11 @@ export default async function CompaniesPage({
       <div className="bg-[var(--brand-surface)] border border-[var(--brand-border)] rounded-xl overflow-hidden">
         {companies.length === 0 ? (
           <p className="p-8 text-sm text-[var(--brand-fg-muted)] text-center">
-            {t.companies.empty}
+            {phase === "clientes"
+              ? t.companies.emptyClientes
+              : phase === "outreach"
+                ? t.companies.emptyOutreach
+                : t.companies.empty}
           </p>
         ) : (
           <table className="w-full text-sm">
@@ -103,6 +108,11 @@ export default async function CompaniesPage({
                 <th className="text-left px-4 py-3 font-medium">
                   {t.companies.columnOwner}
                 </th>
+                {phase === "outreach" && (
+                  <th className="text-left px-4 py-3 font-medium">
+                    {t.activity.title}
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--brand-border)]">
@@ -171,6 +181,11 @@ export default async function CompaniesPage({
                     <td className="px-4 py-3 text-[var(--brand-fg-muted)] text-xs">
                       {c.assigned_to?.full_name ?? "—"}
                     </td>
+                    {phase === "outreach" && (
+                      <td className="px-4 py-3">
+                        <MarkContactedButton companyId={c.id} />
+                      </td>
+                    )}
                   </tr>
                 );
               })}

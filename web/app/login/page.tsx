@@ -80,6 +80,7 @@ export default function LoginPage() {
             alt="Skylos"
             width={120}
             height={28}
+            style={{ height: "auto" }}
             priority
           />
         </div>

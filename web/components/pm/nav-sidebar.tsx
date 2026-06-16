@@ -12,6 +12,7 @@ import {
   Activity,
   Sun,
   ScrollText,
+  BookOpen,
   LogOut,
 } from "lucide-react";
 import { t } from "@/lib/i18n/es";
@@ -25,6 +26,7 @@ const nav = [
   { href: "/activity", label: t.nav.activity, icon: Activity },
   { href: "/standup", label: t.nav.standup, icon: Sun },
   { href: "/agent-log", label: t.nav.agentLog, icon: ScrollText },
+  { href: "/guide", label: "Guía", icon: BookOpen },
 ];
 
 export function NavSidebar({
@@ -44,6 +46,7 @@ export function NavSidebar({
             alt="Skylos"
             width={108}
             height={26}
+            style={{ height: "auto" }}
             priority
           />
         </Link>

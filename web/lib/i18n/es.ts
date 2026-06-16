@@ -154,6 +154,14 @@ export const t = {
     columnPhone: "Teléfono",
     columnEmail: "Email",
     empty: "No hay empresas para estos filtros.",
+    emptyClientes:
+      "Aún no hay clientes activos. Cuando muevas un lead con \"Mover a cliente activo\" desde su ficha, aparecerá acá.",
+    emptyOutreach:
+      "No quedan leads en outreach con estos filtros — probá limpiar el buscador o cambiar de filtros.",
+    markedContactedToast: "Contacto registrado ✓",
+    markContacted: "📞 Marcar contactado",
+    markContactedHint:
+      "Registra una actividad MESSAGE_SENT por WhatsApp ahora mismo.",
     phaseOutreach: "Outreach",
     phaseClientes: "Clientes",
     phaseAll: "Todos",
