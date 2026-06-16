@@ -9,6 +9,7 @@
     "prisma:studio": "prisma studio",
     "prisma:seed": "prisma db seed",
     "import:base-unificada": "ts-node scripts/import-base-unificada.ts",
+    "import:outreach": "ts-node scripts/import-outreach-leads.ts",
     "validate": "ts-node scripts/validate-schema.ts"
   },
   "prisma": {
