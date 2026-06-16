@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { formatDate } from "@/lib/format/date";
 import { t } from "@/lib/i18n/es";
 import { TaskStatusPill } from "@/components/pm/status-pill";
+import { Modal } from "@/components/pm/modal";
 import { createTask, updateTaskStatus } from "@/lib/mutations/tasks";
 import type { MyTaskRow, TaskStatus } from "@/lib/types/tasks";
 
@@ -33,15 +34,37 @@ const TABS = [
 ] as const;
 
 const STATUSES: TaskStatus[] = ["TODO", "IN_PROGRESS", "BLOCKED", "DONE"];
+const PRIORITIES = ["LOW", "MEDIUM", "HIGH", "URGENT"] as const;
 
-export function TasksQueue({ initialTasks }: { initialTasks: MyTaskRow[] }) {
+export function TasksQueue({
+  initialTasks,
+  teamMembers,
+  currentUserId,
+}: {
+  initialTasks: MyTaskRow[];
+  teamMembers: { id: string; full_name: string }[];
+  currentUserId: string;
+}) {
   const router = useRouter();
   const [tab, setTab] = useState<(typeof TABS)[number]["key"]>("TODO");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkStatus, setBulkStatus] = useState<TaskStatus | "">("");
   const [newTitle, setNewTitle] = useState("");
+  const [inlineAssignee, setInlineAssignee] = useState(currentUserId);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+
+  // Rich modal state
+  const [richOpen, setRichOpen] = useState(false);
+  const [richTitle, setRichTitle] = useState("");
+  const [richAssignee, setRichAssignee] = useState(currentUserId);
+  const [richPriority, setRichPriority] = useState<(typeof PRIORITIES)[number]>(
+    "MEDIUM",
+  );
+  const [richDue, setRichDue] = useState("");
+  const [richHours, setRichHours] = useState("");
+  const [richResources, setRichResources] = useState("");
+  const [richError, setRichError] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const def = TABS.find((tt) => tt.key === tab);
@@ -49,16 +72,12 @@ export function TasksQueue({ initialTasks }: { initialTasks: MyTaskRow[] }) {
   }, [initialTasks, tab]);
 
   const allSelected =
-    filtered.length > 0 &&
-    filtered.every((r) => selected.has(r.id));
+    filtered.length > 0 && filtered.every((r) => selected.has(r.id));
 
   function toggleAll() {
     const next = new Set(selected);
-    if (allSelected) {
-      filtered.forEach((r) => next.delete(r.id));
-    } else {
-      filtered.forEach((r) => next.add(r.id));
-    }
+    if (allSelected) filtered.forEach((r) => next.delete(r.id));
+    else filtered.forEach((r) => next.add(r.id));
     setSelected(next);
   }
 
@@ -91,13 +110,49 @@ export function TasksQueue({ initialTasks }: { initialTasks: MyTaskRow[] }) {
     setError(null);
     if (!newTitle.trim()) return;
     const title = newTitle.trim();
+    const assigneeId = inlineAssignee;
     startTransition(async () => {
-      const res = await createTask({ title, priority: "MEDIUM" });
+      const res = await createTask({
+        title,
+        priority: "MEDIUM",
+        assigneeId,
+      });
       if (!res.ok) {
         setError(res.error.message);
         return;
       }
       setNewTitle("");
+      setInlineAssignee(currentUserId);
+      router.refresh();
+    });
+  }
+
+  function submitRich() {
+    setRichError(null);
+    if (!richTitle.trim()) {
+      setRichError("El título es obligatorio.");
+      return;
+    }
+    startTransition(async () => {
+      const res = await createTask({
+        title: richTitle.trim(),
+        assigneeId: richAssignee,
+        priority: richPriority,
+        dueDate: richDue ? new Date(richDue).toISOString() : null,
+        estimatedHours: richHours ? Number(richHours) : undefined,
+        resources: richResources.trim() || undefined,
+      });
+      if (!res.ok) {
+        setRichError(res.error.message);
+        return;
+      }
+      setRichOpen(false);
+      setRichTitle("");
+      setRichAssignee(currentUserId);
+      setRichPriority("MEDIUM");
+      setRichDue("");
+      setRichHours("");
+      setRichResources("");
       router.refresh();
     });
   }
@@ -115,20 +170,39 @@ export function TasksQueue({ initialTasks }: { initialTasks: MyTaskRow[] }) {
           e.preventDefault();
           createInline();
         }}
-        className="bg-[var(--brand-surface)] border border-[var(--brand-border)] rounded-xl p-4 flex gap-3"
+        className="bg-[var(--brand-surface)] border border-[var(--brand-border)] rounded-2xl p-4 shadow-sm flex flex-wrap items-center gap-3"
       >
         <input
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}
           placeholder={t.tasks.inlineCreatePlaceholder}
-          className="flex-1 text-sm border border-[var(--brand-border)] rounded-md px-3 py-2 focus:outline-none focus:border-[var(--brand-blue)]"
+          className="flex-1 min-w-[200px] text-sm border border-[var(--brand-border)] rounded-md px-3 py-2 focus:outline-none focus:border-[var(--brand-blue)]"
         />
+        <select
+          value={inlineAssignee}
+          onChange={(e) => setInlineAssignee(e.target.value)}
+          className="text-sm border border-[var(--brand-border)] rounded-md px-2 py-2 bg-white"
+          title={t.projects.newTaskAssignee}
+        >
+          {teamMembers.map((u) => (
+            <option key={u.id} value={u.id}>
+              {u.full_name}
+            </option>
+          ))}
+        </select>
         <button
           type="submit"
           disabled={pending || !newTitle.trim()}
           className="px-4 py-2 text-sm rounded-md bg-[var(--brand-blue)] text-white disabled:opacity-50"
         >
           {t.tasks.inlineCreate}
+        </button>
+        <button
+          type="button"
+          onClick={() => setRichOpen(true)}
+          className="text-xs text-[var(--brand-blue)] hover:underline"
+        >
+          + detalle
         </button>
       </form>
 
@@ -189,7 +263,7 @@ export function TasksQueue({ initialTasks }: { initialTasks: MyTaskRow[] }) {
         </div>
       )}
 
-      <div className="bg-[var(--brand-surface)] border border-[var(--brand-border)] rounded-xl overflow-hidden">
+      <div className="bg-[var(--brand-surface)] border border-[var(--brand-border)] rounded-2xl overflow-hidden shadow-sm">
         {filtered.length === 0 ? (
           <p className="p-8 text-sm text-[var(--brand-fg-muted)] text-center">
             {t.tasks.empty}
@@ -208,6 +282,9 @@ export function TasksQueue({ initialTasks }: { initialTasks: MyTaskRow[] }) {
                 </th>
                 <th className="text-left px-3 py-3 font-medium">
                   {t.tasks.columnTitle}
+                </th>
+                <th className="text-left px-3 py-3 font-medium">
+                  {t.projects.newTaskAssignee}
                 </th>
                 <th className="text-left px-3 py-3 font-medium">
                   {t.tasks.columnProject}
@@ -237,6 +314,124 @@ export function TasksQueue({ initialTasks }: { initialTasks: MyTaskRow[] }) {
           </table>
         )}
       </div>
+
+      <Modal
+        open={richOpen}
+        onClose={() => setRichOpen(false)}
+        title="Nueva tarea con detalle"
+      >
+        <div className="space-y-3">
+          <label className="block">
+            <span className="text-xs text-[var(--brand-fg-muted)] uppercase tracking-wide">
+              {t.projects.newTaskTitle}
+            </span>
+            <input
+              autoFocus
+              value={richTitle}
+              onChange={(e) => setRichTitle(e.target.value)}
+              placeholder={t.projects.newTaskTitlePlaceholder}
+              className="mt-1 w-full text-sm border border-[var(--brand-border)] rounded-md px-3 py-2 focus:outline-none focus:border-[var(--brand-blue)]"
+            />
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block">
+              <span className="text-xs text-[var(--brand-fg-muted)] uppercase tracking-wide">
+                {t.projects.newTaskAssignee}
+              </span>
+              <select
+                value={richAssignee}
+                onChange={(e) => setRichAssignee(e.target.value)}
+                className="mt-1 w-full text-sm border border-[var(--brand-border)] rounded-md px-2 py-2 bg-white"
+              >
+                {teamMembers.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.full_name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className="text-xs text-[var(--brand-fg-muted)] uppercase tracking-wide">
+                {t.projects.newTaskPriority}
+              </span>
+              <select
+                value={richPriority}
+                onChange={(e) =>
+                  setRichPriority(
+                    e.target.value as (typeof PRIORITIES)[number],
+                  )
+                }
+                className="mt-1 w-full text-sm border border-[var(--brand-border)] rounded-md px-2 py-2 bg-white"
+              >
+                {PRIORITIES.map((p) => (
+                  <option key={p} value={p}>
+                    {t.priority[p]}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block">
+              <span className="text-xs text-[var(--brand-fg-muted)] uppercase tracking-wide">
+                {t.projects.newTaskDue}
+              </span>
+              <input
+                type="date"
+                value={richDue}
+                onChange={(e) => setRichDue(e.target.value)}
+                className="mt-1 w-full text-sm border border-[var(--brand-border)] rounded-md px-2 py-2"
+              />
+            </label>
+            <label className="block">
+              <span className="text-xs text-[var(--brand-fg-muted)] uppercase tracking-wide">
+                {t.projects.newTaskEstimate}
+              </span>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                value={richHours}
+                onChange={(e) => setRichHours(e.target.value)}
+                placeholder="3"
+                className="mt-1 w-full text-sm border border-[var(--brand-border)] rounded-md px-3 py-2"
+              />
+            </label>
+          </div>
+          <label className="block">
+            <span className="text-xs text-[var(--brand-fg-muted)] uppercase tracking-wide">
+              {t.projects.newTaskResources}
+            </span>
+            <textarea
+              rows={3}
+              value={richResources}
+              onChange={(e) => setRichResources(e.target.value)}
+              placeholder={t.projects.newTaskResourcesPlaceholder}
+              className="mt-1 w-full text-sm border border-[var(--brand-border)] rounded-md px-3 py-2 resize-none focus:outline-none focus:border-[var(--brand-blue)]"
+            />
+          </label>
+          {richError && (
+            <p className="text-sm text-[var(--brand-magenta)]">{richError}</p>
+          )}
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setRichOpen(false)}
+              className="px-4 py-2 text-sm rounded-md border border-[var(--brand-border)] hover:bg-[var(--brand-bg)]"
+            >
+              {t.projects.newTaskCancel}
+            </button>
+            <button
+              type="button"
+              onClick={submitRich}
+              disabled={pending}
+              className="px-4 py-2 text-sm rounded-md bg-[var(--brand-blue)] text-white disabled:opacity-50"
+            >
+              {pending ? "…" : t.projects.newTaskCreate}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
@@ -255,6 +450,7 @@ function TaskRow({
   const [status, setStatus] = useState<TaskStatus>(row.status);
   const [pending, startTransition] = useTransition();
   const [err, setErr] = useState<string | null>(null);
+  const [showResources, setShowResources] = useState(false);
 
   function onChange(next: TaskStatus) {
     const prev = status;
@@ -271,42 +467,74 @@ function TaskRow({
     });
   }
 
+  const hasResources = Boolean(row.resources && row.resources.trim().length);
+
   return (
-    <tr className="hover:bg-[var(--brand-bg)] transition">
-      <td className="px-3 py-3 w-8">
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={onToggle}
-          aria-label={`seleccionar ${row.title}`}
-        />
-      </td>
-      <td className="px-3 py-3">
-        <p className="font-medium">{row.title}</p>
-        {err && <p className="text-xs text-[var(--brand-magenta)]">{err}</p>}
-      </td>
-      <td className="px-3 py-3 text-[var(--brand-fg-muted)] text-xs">
-        {row.project?.name ?? "—"}
-      </td>
-      <td className="px-3 py-3 text-[var(--brand-fg-muted)] text-xs">
-        {formatDate(row.due_date)}
-      </td>
-      <td className="px-3 py-3 text-xs">{t.priority[row.priority]}</td>
-      <td className="px-3 py-3 flex items-center gap-2">
-        <TaskStatusPill status={status} />
-        <select
-          value={status}
-          disabled={pending}
-          onChange={(e) => onChange(e.target.value as TaskStatus)}
-          className="text-xs border border-[var(--brand-border)] rounded-md px-2 py-1 bg-white"
-        >
-          {STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {t.status[s]}
-            </option>
-          ))}
-        </select>
-      </td>
-    </tr>
+    <>
+      <tr className="hover:bg-[var(--brand-bg)] transition">
+        <td className="px-3 py-3 w-8">
+          <input
+            type="checkbox"
+            checked={checked}
+            onChange={onToggle}
+            aria-label={`seleccionar ${row.title}`}
+          />
+        </td>
+        <td className="px-3 py-3">
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <p className="font-medium">{row.title}</p>
+            {row.estimated_hours != null && (
+              <span className="text-xs text-[var(--brand-fg-muted)] bg-[var(--brand-bg)] px-1.5 py-0.5 rounded">
+                ⏱ {row.estimated_hours}h
+              </span>
+            )}
+            {hasResources && (
+              <button
+                type="button"
+                onClick={() => setShowResources((s) => !s)}
+                className="text-xs text-[var(--brand-blue)] hover:underline"
+              >
+                📎 {showResources ? "Ocultar" : "Recursos"}
+              </button>
+            )}
+          </div>
+          {err && <p className="text-xs text-[var(--brand-magenta)]">{err}</p>}
+        </td>
+        <td className="px-3 py-3 text-[var(--brand-fg-muted)] text-xs">
+          {row.assignee?.full_name ?? "—"}
+        </td>
+        <td className="px-3 py-3 text-[var(--brand-fg-muted)] text-xs">
+          {row.project?.name ?? "—"}
+        </td>
+        <td className="px-3 py-3 text-[var(--brand-fg-muted)] text-xs">
+          {formatDate(row.due_date)}
+        </td>
+        <td className="px-3 py-3 text-xs">{t.priority[row.priority]}</td>
+        <td className="px-3 py-3 flex items-center gap-2">
+          <TaskStatusPill status={status} />
+          <select
+            value={status}
+            disabled={pending}
+            onChange={(e) => onChange(e.target.value as TaskStatus)}
+            className="text-xs border border-[var(--brand-border)] rounded-md px-2 py-1 bg-white"
+          >
+            {STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {t.status[s]}
+              </option>
+            ))}
+          </select>
+        </td>
+      </tr>
+      {hasResources && showResources && (
+        <tr className="bg-[var(--brand-bg)]">
+          <td colSpan={7} className="px-4 py-3">
+            <pre className="text-xs text-[var(--brand-fg)] whitespace-pre-wrap font-mono">
+              {row.resources}
+            </pre>
+          </td>
+        </tr>
+      )}
+    </>
   );
 }

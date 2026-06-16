@@ -327,6 +327,11 @@ export const t = {
     newTaskTitlePlaceholder: "Ej: revisar propuesta con cliente",
     newTaskPriority: "Prioridad",
     newTaskDue: "Vence",
+    newTaskAssignee: "Responsable",
+    newTaskEstimate: "Horas estimadas",
+    newTaskResources: "Recursos / links",
+    newTaskResourcesPlaceholder:
+      "URLs, docs en Drive, contacto del cliente, contexto necesario…",
     newTaskCreate: "Crear",
     newTaskCancel: "Cancelar",
   },

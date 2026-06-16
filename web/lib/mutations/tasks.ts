@@ -15,6 +15,8 @@ const createSchema = z.object({
   assigneeId: z.string().uuid().optional(),
   priority: z.enum(PRIORITIES).default("MEDIUM"),
   dueDate: z.string().nullable().optional(),
+  estimatedHours: z.number().int().positive().optional(),
+  resources: z.string().optional(),
 });
 
 type Envelope<T> =
@@ -50,6 +52,8 @@ export async function createTask(
       project_id: parsed.data.projectId ?? null,
       priority: parsed.data.priority,
       due_date: parsed.data.dueDate ?? null,
+      estimated_hours: parsed.data.estimatedHours ?? null,
+      resources: parsed.data.resources?.trim() || null,
       created_by_id: user.id,
       created_by_agent: false,
     })

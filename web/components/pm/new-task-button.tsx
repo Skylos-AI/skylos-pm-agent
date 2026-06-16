@@ -8,12 +8,23 @@ import { createTask } from "@/lib/mutations/tasks";
 
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH", "URGENT"] as const;
 
-export function NewTaskButton({ projectId }: { projectId: string }) {
+export function NewTaskButton({
+  projectId,
+  teamMembers,
+  defaultAssigneeId,
+}: {
+  projectId: string;
+  teamMembers: { id: string; full_name: string }[];
+  defaultAssigneeId: string;
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [priority, setPriority] = useState<(typeof PRIORITIES)[number]>("MEDIUM");
+  const [assigneeId, setAssigneeId] = useState<string>(defaultAssigneeId);
   const [dueDate, setDueDate] = useState("");
+  const [estimatedHours, setEstimatedHours] = useState("");
+  const [resources, setResources] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -28,7 +39,10 @@ export function NewTaskButton({ projectId }: { projectId: string }) {
         title: title.trim(),
         projectId,
         priority,
+        assigneeId,
         dueDate: dueDate ? new Date(dueDate).toISOString() : null,
+        estimatedHours: estimatedHours ? Number(estimatedHours) : undefined,
+        resources: resources.trim() || undefined,
       });
       if (!res.ok) {
         setError(res.error.message);
@@ -38,6 +52,9 @@ export function NewTaskButton({ projectId }: { projectId: string }) {
       setTitle("");
       setDueDate("");
       setPriority("MEDIUM");
+      setAssigneeId(defaultAssigneeId);
+      setEstimatedHours("");
+      setResources("");
       router.refresh();
     });
   }
@@ -72,6 +89,22 @@ export function NewTaskButton({ projectId }: { projectId: string }) {
           <div className="grid grid-cols-2 gap-3">
             <label className="block">
               <span className="text-xs text-[var(--brand-fg-muted)] uppercase tracking-wide">
+                {t.projects.newTaskAssignee}
+              </span>
+              <select
+                value={assigneeId}
+                onChange={(e) => setAssigneeId(e.target.value)}
+                className="mt-1 w-full text-sm border border-[var(--brand-border)] rounded-md px-2 py-2 bg-white"
+              >
+                {teamMembers.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.full_name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className="text-xs text-[var(--brand-fg-muted)] uppercase tracking-wide">
                 {t.projects.newTaskPriority}
               </span>
               <select
@@ -88,6 +121,8 @@ export function NewTaskButton({ projectId }: { projectId: string }) {
                 ))}
               </select>
             </label>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             <label className="block">
               <span className="text-xs text-[var(--brand-fg-muted)] uppercase tracking-wide">
                 {t.projects.newTaskDue}
@@ -99,7 +134,33 @@ export function NewTaskButton({ projectId }: { projectId: string }) {
                 className="mt-1 w-full text-sm border border-[var(--brand-border)] rounded-md px-2 py-2"
               />
             </label>
+            <label className="block">
+              <span className="text-xs text-[var(--brand-fg-muted)] uppercase tracking-wide">
+                {t.projects.newTaskEstimate}
+              </span>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={1}
+                value={estimatedHours}
+                onChange={(e) => setEstimatedHours(e.target.value)}
+                placeholder="3"
+                className="mt-1 w-full text-sm border border-[var(--brand-border)] rounded-md px-3 py-2"
+              />
+            </label>
           </div>
+          <label className="block">
+            <span className="text-xs text-[var(--brand-fg-muted)] uppercase tracking-wide">
+              {t.projects.newTaskResources}
+            </span>
+            <textarea
+              rows={3}
+              value={resources}
+              onChange={(e) => setResources(e.target.value)}
+              placeholder={t.projects.newTaskResourcesPlaceholder}
+              className="mt-1 w-full text-sm border border-[var(--brand-border)] rounded-md px-3 py-2 resize-none focus:outline-none focus:border-[var(--brand-blue)]"
+            />
+          </label>
           {error && <p className="text-sm text-[var(--brand-magenta)]">{error}</p>}
           <div className="flex justify-end gap-2 pt-2">
             <button

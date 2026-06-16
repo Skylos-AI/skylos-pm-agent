@@ -13,6 +13,8 @@ export type ProjectTask = {
   status: "TODO" | "IN_PROGRESS" | "BLOCKED" | "DONE";
   priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
   due_date: string | null;
+  estimated_hours: number | null;
+  resources: string | null;
   updated_at: string;
   assignee: { id: string; full_name: string } | null;
 };

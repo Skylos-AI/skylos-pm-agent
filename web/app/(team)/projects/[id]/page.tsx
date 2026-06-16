@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { currentUser } from "@/lib/auth/current-user";
 import { getProjectDetail } from "@/lib/data/projects";
+import { getActiveTeamMembers } from "@/lib/data/tasks";
 import { ProjectProgressStrip } from "@/components/pm/project-progress-strip";
 import { ProjectTaskRow } from "@/components/pm/project-task-row";
 import { NewTaskButton } from "@/components/pm/new-task-button";
@@ -19,7 +20,10 @@ export default async function ProjectDetailPage({
   const user = await currentUser();
   if (!user) redirect("/login");
   const { id } = await params;
-  const project = await getProjectDetail(id);
+  const [project, teamMembers] = await Promise.all([
+    getProjectDetail(id),
+    getActiveTeamMembers(),
+  ]);
   if (!project) notFound();
 
   return (
@@ -121,7 +125,11 @@ export default async function ProjectDetailPage({
           <h2 className="font-display text-lg tracking-tight">
             {t.projects.sectionTasksOpen}
           </h2>
-          <NewTaskButton projectId={project.id} />
+          <NewTaskButton
+            projectId={project.id}
+            teamMembers={teamMembers}
+            defaultAssigneeId={user.id}
+          />
         </div>
         {project.tasks_open.length === 0 ? (
           <EmptyRow>{t.projects.noOpenTasks}</EmptyRow>

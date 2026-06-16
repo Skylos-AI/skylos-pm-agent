@@ -7,5 +7,8 @@ export type MyTaskRow = {
   status: TaskStatus;
   priority: TaskPriority;
   due_date: string | null;
+  estimated_hours: number | null;
+  resources: string | null;
   project: { id: string; name: string } | null;
+  assignee: { id: string; full_name: string } | null;
 };

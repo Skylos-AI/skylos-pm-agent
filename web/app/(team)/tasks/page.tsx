@@ -1,13 +1,16 @@
 import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth/current-user";
-import { getMyTasks } from "@/lib/data/tasks";
+import { getMyTasks, getActiveTeamMembers } from "@/lib/data/tasks";
 import { TasksQueue } from "@/components/pm/tasks-queue";
 import { t } from "@/lib/i18n/es";
 
 export default async function TasksPage() {
   const user = await currentUser();
   if (!user) redirect("/login");
-  const tasks = await getMyTasks(user.id);
+  const [tasks, teamMembers] = await Promise.all([
+    getMyTasks(user.id),
+    getActiveTeamMembers(),
+  ]);
   const openCount = tasks.filter((row) => row.status !== "DONE").length;
 
   return (
@@ -20,7 +23,11 @@ export default async function TasksPage() {
           {t.tasks.countOpen(openCount)}
         </span>
       </header>
-      <TasksQueue initialTasks={tasks} />
+      <TasksQueue
+        initialTasks={tasks}
+        teamMembers={teamMembers}
+        currentUserId={user.id}
+      />
     </div>
   );
 }

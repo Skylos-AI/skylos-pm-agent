@@ -245,6 +245,8 @@ model Task {
   priority       TaskPriority @default(MEDIUM)
   dueDate        DateTime?    @map("due_date")
   completedAt    DateTime?    @map("completed_at")
+  estimatedHours Int?         @map("estimated_hours")
+  resources      String?      @db.Text
   createdById    String?      @map("created_by_id") @db.Uuid
   createdByAgent Boolean      @default(false) @map("created_by_agent")
   createdAt      DateTime     @default(now()) @map("created_at")

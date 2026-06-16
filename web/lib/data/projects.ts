@@ -128,7 +128,7 @@ export async function getProjectDetail(
     supa
       .from("tasks")
       .select(
-        "id, title, status, priority, due_date, updated_at, assignee:users!tasks_assignee_id_fkey(id, full_name)",
+        "id, title, status, priority, due_date, estimated_hours, resources, updated_at, assignee:users!tasks_assignee_id_fkey(id, full_name)",
       )
       .eq("project_id", id)
       .order("due_date", { ascending: true, nullsFirst: false }),
