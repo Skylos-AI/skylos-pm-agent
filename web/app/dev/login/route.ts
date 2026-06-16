@@ -4,13 +4,24 @@ import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import { isAllowed } from "@/lib/auth/allowlist";
 
 // Dev-only quick login. Mints a session via the admin API so you can skip
-// the email rate-limit while testing locally. Disabled in production.
+// the email rate-limit while testing locally.
+//
+// Disabled when NODE_ENV=production OR when SKYLOS_DEV_LOGIN_ENABLED is
+// set to anything other than "true" — the env flag lets staging deploys
+// explicitly opt out without relying on NODE_ENV detection.
 //
 // Usage: http://localhost:3000/dev/login?email=jhonny.r.lopz@gmail.com
 
+function isDevLoginEnabled(): boolean {
+  if (process.env.NODE_ENV === "production") return false;
+  const flag = process.env.SKYLOS_DEV_LOGIN_ENABLED;
+  if (flag === undefined) return true;
+  return flag.toLowerCase() === "true";
+}
+
 export async function GET(request: NextRequest) {
-  if (process.env.NODE_ENV === "production") {
-    return new NextResponse("Disabled in production.", { status: 403 });
+  if (!isDevLoginEnabled()) {
+    return new NextResponse("Disabled.", { status: 403 });
   }
 
   const { searchParams, origin } = new URL(request.url);
