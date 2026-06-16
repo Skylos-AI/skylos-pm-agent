@@ -6,6 +6,10 @@ import { CompanyStatusPill } from "@/components/pm/company-status-pill";
 import { SectionCard, EmptyRow } from "@/components/pm/section-card";
 import { OutreachButton } from "@/components/pm/outreach-drawer";
 import { LogActivityButton } from "@/components/pm/log-activity-button";
+import {
+  ConvertToClientButton,
+  NewProjectButton,
+} from "@/components/pm/company-phase-actions";
 import { formatBob } from "@/lib/format/currency";
 import { formatDate, formatRelative } from "@/lib/format/date";
 import { t } from "@/lib/i18n/es";
@@ -86,6 +90,14 @@ export default async function CompanyDetailPage({
               persona={company.primary_persona}
             />
             <LogActivityButton companyId={company.id} contacts={contactsForLog} />
+            <ConvertToClientButton
+              companyId={company.id}
+              currentStatus={company.status}
+            />
+            <NewProjectButton
+              companyId={company.id}
+              currentStatus={company.status}
+            />
           </div>
         </div>
         {company.notes && (

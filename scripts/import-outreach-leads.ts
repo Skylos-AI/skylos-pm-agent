@@ -53,9 +53,10 @@ function normalizePhone(raw: string | undefined): string | null {
   if (!raw) return null;
   const digits = raw.replace(/[^\d]/g, "");
   if (!digits) return null;
-  // Bolivian numbers are 8 digits; prepend +591 if missing country code.
-  if (digits.length === 8) return `+591${digits}`;
+  // Bolivian numbers: landlines 7 digits (with area), mobiles 8 digits.
+  // Prepend +591 country code when missing.
   if (digits.startsWith("591")) return `+${digits}`;
+  if (digits.length === 7 || digits.length === 8) return `+591${digits}`;
   return `+${digits}`;
 }
 

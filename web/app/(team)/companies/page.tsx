@@ -2,10 +2,17 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth/current-user";
 import { getCompaniesList } from "@/lib/data/companies";
-import type { CompanyStatus } from "@/lib/types/companies";
+import type { CompanyPhase, CompanyStatus } from "@/lib/types/companies";
 import { CompaniesFilterBar } from "@/components/pm/companies-filter-bar";
 import { CompanyStatusPill } from "@/components/pm/company-status-pill";
+import { PhaseTabs } from "@/components/pm/phase-tabs";
 import { t } from "@/lib/i18n/es";
+
+function waHref(num: string | null): string | null {
+  if (!num) return null;
+  const digits = num.replace(/[^\d]/g, "");
+  return digits ? `https://wa.me/${digits}` : null;
+}
 
 export default async function CompaniesPage({
   searchParams,
@@ -13,6 +20,7 @@ export default async function CompaniesPage({
   searchParams: Promise<{
     q?: string;
     status?: string;
+    phase?: string;
     sector?: string;
     department?: string;
     owner?: string;
@@ -21,13 +29,33 @@ export default async function CompaniesPage({
   const user = await currentUser();
   if (!user) redirect("/login");
   const sp = await searchParams;
-  const { companies, owners, sectors, departments } = await getCompaniesList({
-    q: sp.q,
-    status: (sp.status as CompanyStatus) || undefined,
-    sector: sp.sector,
-    department: sp.department,
-    assignedToId: sp.owner,
-  });
+  const phase: CompanyPhase =
+    sp.phase === "clientes" || sp.phase === "todos" ? sp.phase : "outreach";
+
+  // Fetch the active-phase view once for the table, plus a lean counts pull
+  // so the tabs show real numbers (without re-running 3 full queries).
+  const [active, allForCounts] = await Promise.all([
+    getCompaniesList({
+      q: sp.q,
+      status: (sp.status as CompanyStatus) || undefined,
+      phase,
+      sector: sp.sector,
+      department: sp.department,
+      assignedToId: sp.owner,
+    }),
+    getCompaniesList({ phase: "todos" }),
+  ]);
+
+  const counts: Record<CompanyPhase, number> = {
+    outreach: allForCounts.companies.filter(
+      (c) => c.status === "LEAD" || c.status === "PROSPECT",
+    ).length,
+    clientes: allForCounts.companies.filter((c) => c.status === "ACTIVE_CLIENT")
+      .length,
+    todos: allForCounts.companies.length,
+  };
+
+  const { companies, owners, sectors, departments } = active;
 
   return (
     <div className="min-h-screen p-8 lg:p-10">
@@ -39,6 +67,9 @@ export default async function CompaniesPage({
           {companies.length} {companies.length === 1 ? "empresa" : "empresas"}
         </span>
       </header>
+
+      <PhaseTabs counts={counts} />
+
       <CompaniesFilterBar
         owners={owners}
         sectors={sectors}
@@ -58,13 +89,13 @@ export default async function CompaniesPage({
                   {t.companies.columnName}
                 </th>
                 <th className="text-left px-4 py-3 font-medium">
-                  {t.companies.columnNit}
-                </th>
-                <th className="text-left px-4 py-3 font-medium">
                   {t.companies.columnSector}
                 </th>
                 <th className="text-left px-4 py-3 font-medium">
-                  {t.companies.columnDept}
+                  {t.companies.columnPhone}
+                </th>
+                <th className="text-left px-4 py-3 font-medium">
+                  {t.companies.columnEmail}
                 </th>
                 <th className="text-left px-4 py-3 font-medium">
                   {t.companies.columnStatus}
@@ -75,41 +106,74 @@ export default async function CompaniesPage({
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--brand-border)]">
-              {companies.map((c) => (
-                <tr
-                  key={c.id}
-                  className="hover:bg-[var(--brand-bg)] transition"
-                >
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/companies/${c.id}`}
-                      className="font-medium text-[var(--brand-fg)] hover:text-[var(--brand-blue)]"
-                    >
-                      {c.name}
-                    </Link>
-                    {c.city && (
-                      <p className="text-xs text-[var(--brand-fg-muted)]">
-                        {c.city}
-                      </p>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-[var(--brand-fg-muted)]">
-                    {c.nit ?? "—"}
-                  </td>
-                  <td className="px-4 py-3 text-[var(--brand-fg-muted)]">
-                    {c.sector ?? "—"}
-                  </td>
-                  <td className="px-4 py-3 text-[var(--brand-fg-muted)]">
-                    {c.department ?? "—"}
-                  </td>
-                  <td className="px-4 py-3">
-                    <CompanyStatusPill status={c.status} />
-                  </td>
-                  <td className="px-4 py-3 text-[var(--brand-fg-muted)]">
-                    {c.assigned_to?.full_name ?? "—"}
-                  </td>
-                </tr>
-              ))}
+              {companies.map((c) => {
+                const wa = waHref(
+                  c.primary_contact?.whatsapp ?? c.primary_contact?.phone ?? null,
+                );
+                const phoneText =
+                  c.primary_contact?.whatsapp ?? c.primary_contact?.phone ?? null;
+                const email = c.primary_contact?.email ?? null;
+                return (
+                  <tr
+                    key={c.id}
+                    className="hover:bg-[var(--brand-bg)] transition"
+                  >
+                    <td className="px-4 py-3">
+                      <Link
+                        href={`/companies/${c.id}`}
+                        className="font-medium text-[var(--brand-fg)] hover:text-[var(--brand-blue)]"
+                      >
+                        {c.name}
+                      </Link>
+                      {c.department && (
+                        <p className="text-xs text-[var(--brand-fg-muted)]">
+                          {c.department}
+                          {c.city ? ` · ${c.city}` : ""}
+                        </p>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-[var(--brand-fg-muted)] text-xs">
+                      {c.sector ?? "—"}
+                    </td>
+                    <td className="px-4 py-3 text-xs">
+                      {phoneText ? (
+                        wa ? (
+                          <a
+                            href={wa}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-[var(--brand-blue)] hover:underline"
+                          >
+                            {phoneText}
+                          </a>
+                        ) : (
+                          phoneText
+                        )
+                      ) : (
+                        <span className="text-[var(--brand-fg-muted)]">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-xs">
+                      {email ? (
+                        <a
+                          href={`mailto:${email}`}
+                          className="text-[var(--brand-blue)] hover:underline"
+                        >
+                          {email}
+                        </a>
+                      ) : (
+                        <span className="text-[var(--brand-fg-muted)]">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <CompanyStatusPill status={c.status} />
+                    </td>
+                    <td className="px-4 py-3 text-[var(--brand-fg-muted)] text-xs">
+                      {c.assigned_to?.full_name ?? "—"}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

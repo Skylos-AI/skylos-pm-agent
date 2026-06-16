@@ -3,15 +3,18 @@ import { createServiceRoleClient } from "@/lib/supabase/service-role";
 import type {
   CompanyListRow,
   CompanyStatus,
+  CompanyPhase,
 } from "@/lib/types/companies";
+import { PHASE_STATUSES } from "@/lib/types/companies";
 
-export type { CompanyListRow, CompanyStatus };
+export type { CompanyListRow, CompanyStatus, CompanyPhase };
 
 const OPEN_PROJECT = ["ACTIVE", "ON_HOLD", "PLANNING"] as const;
 
 export type CompanyFilters = {
   q?: string;
   status?: CompanyStatus;
+  phase?: CompanyPhase;
   sector?: string;
   department?: string;
   assignedToId?: string;
@@ -29,11 +32,15 @@ export async function getCompaniesList(
   let q = supa
     .from("companies")
     .select(
-      "id, name, nit, sector, city, department, status, assigned_to:users!companies_assigned_to_id_fkey(id, full_name)",
+      "id, name, nit, sector, city, department, status, assigned_to:users!companies_assigned_to_id_fkey(id, full_name), contacts(phone, whatsapp, email, is_primary)",
     )
     .order("name", { ascending: true })
     .limit(500);
   if (filters?.status) q = q.eq("status", filters.status);
+  if (filters?.phase && filters.phase !== "todos") {
+    const allowed = PHASE_STATUSES[filters.phase];
+    if (allowed.length > 0) q = q.in("status", allowed);
+  }
   if (filters?.sector) q = q.eq("sector", filters.sector);
   if (filters?.department) q = q.eq("department", filters.department);
   if (filters?.assignedToId) q = q.eq("assigned_to_id", filters.assignedToId);
@@ -63,8 +70,34 @@ export async function getCompaniesList(
     ),
   ).sort();
 
+  type RawCompany = Omit<CompanyListRow, "primary_contact"> & {
+    contacts?: {
+      phone: string | null;
+      whatsapp: string | null;
+      email: string | null;
+      is_primary: boolean;
+    }[];
+  };
+
+  const companies: CompanyListRow[] = ((rows ?? []) as unknown as RawCompany[]).map(
+    (c) => {
+      const list = c.contacts ?? [];
+      const primary = list.find((ct) => ct.is_primary) ?? list[0] ?? null;
+      return {
+        ...c,
+        primary_contact: primary
+          ? {
+              phone: primary.phone,
+              whatsapp: primary.whatsapp,
+              email: primary.email,
+            }
+          : null,
+      };
+    },
+  );
+
   return {
-    companies: (rows ?? []) as unknown as CompanyListRow[],
+    companies,
     owners: (owners ?? []) as { id: string; full_name: string }[],
     sectors,
     departments,
