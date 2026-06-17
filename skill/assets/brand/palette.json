@@ -1,0 +1,17 @@
+{
+  "name": "Skylos",
+  "website": "https://skylos.solutions",
+  "headingFont": "Winner Sans",
+  "bodyFont": "Geist",
+  "colors": {
+    "background": "#F2F4F7",
+    "foreground": "#1A202C",
+    "foregroundMuted": "#4A5568",
+    "blue": "#2D5BFF",
+    "magenta": "#E536A8",
+    "cyan": "#29D6E5",
+    "surface": "#FFFFFF",
+    "border": "#E2E8F0"
+  },
+  "gradient": "linear-gradient(115deg, #2D5BFF 0%, #E536A8 50%, #29D6E5 100%)"
+}

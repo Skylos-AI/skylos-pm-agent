@@ -26,13 +26,13 @@ Internal project management tools for the 3-person Skylos team (founder Jhonny, 
 
 ## Tools
 
-Group: **read** (6) · **write** (5) · **skylos** (6).
+Group: **read** (6) · **write** (5) · **skylos** (7).
 
 | # | Tool | Group | One-liner |
 |---|---|---|---|
 | 1 | `get-my-tasks` | read | Open tasks for the caller with overdue flagging |
 | 2 | `get-company` | read | Full company snapshot (contacts, projects, deals, activities) |
-| 3 | `get-pipeline-status` | read | Pipeline summary by stage, in BOB |
+| 3 | `get-pipeline-status` | read | Pipeline summary by stage, in USD |
 | 4 | `get-project` | read | Project status with tasks and recent activity |
 | 5 | `search-companies` | read | Search by name/NIT/sector/dept/status |
 | 6 | `get-activity-feed` | read | Recent interactions, filterable |
@@ -47,6 +47,18 @@ Group: **read** (6) · **write** (5) · **skylos** (6).
 | 15 | `client-status-brief` | skylos | Full brief on one active client |
 | 16 | `project-follow-up` | skylos | Progress check: pace, blockers, milestones, suggested actions |
 | 17 | `daily-standup` | skylos | Morning brief: tasks, overdue, pipeline moves, recent client activity |
+| 18 | `fill-proposal` | skylos | Fill a proposal template from `assets/proposals/` with company + persona + contact + value |
+
+## Assets
+
+`assets/` ships with the skill bundle and holds static files Manu reads at
+runtime. See `assets/README.md` for the full layout. Today:
+
+- `assets/proposals/*.md` — proposal templates with `{{placeholders}}`
+  consumed by `fill-proposal`.
+- `assets/brand/` — voice guide, palette JSON, logo SVG.
+- `assets/personas/*.md` — enriched persona briefs (longer than what fits
+  in the DB row); useful for Manu's context when drafting outreach.
 
 See `scripts/<group>/<tool>.js` for args, output shape, and examples. Each script accepts `--help` for usage.
 
