@@ -2,6 +2,7 @@
 const { runTool } = require("../lib/runner");
 const { getClient } = require("../lib/supabase");
 const { appError } = require("../lib/envelope");
+const { formatDate } = require("../lib/time");
 
 const STAGES = ["LEAD", "QUALIFIED", "PROPOSAL", "NEGOTIATION", "WON", "LOST"];
 
@@ -31,7 +32,7 @@ runTool({
     let q = supa
       .from("pipeline_deals")
       .select(
-        "id, title, stage, value_bob, probability, expected_close_date, owner_id, updated_at, company:companies(id, name)",
+        "id, title, stage, value_bob, probability, expected_close_date, updated_at, company:companies(name)",
       );
 
     if (ownerId) q = q.eq("owner_id", ownerId);
@@ -64,7 +65,17 @@ runTool({
         (a, b) =>
           new Date(a.expected_close_date) - new Date(b.expected_close_date),
       )
-      .slice(0, 10);
+      .slice(0, 10)
+      .map((d) => ({
+        id: d.id,
+        title: d.title,
+        stage: d.stage,
+        value_bob: d.value_bob,
+        probability: d.probability,
+        expected_close_date: d.expected_close_date,
+        updated_at: formatDate(d.updated_at),
+        company: d.company?.name ?? null,
+      }));
 
     const summary =
       `Pipeline: ${data?.length ?? 0} negocios, valor total ${total_value_bob} BOB. ` +

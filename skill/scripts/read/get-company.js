@@ -2,6 +2,7 @@
 const { runTool } = require("../lib/runner");
 const { getClient } = require("../lib/supabase");
 const { findCompanyByAny } = require("../lib/db-helpers");
+const { formatDate, cap } = require("../lib/time");
 
 runTool({
   name: "get-company",
@@ -27,7 +28,10 @@ runTool({
       { data: assignedTo },
       { data: persona },
     ] = await Promise.all([
-      supa.from("contacts").select("*").eq("company_id", company.id),
+      supa
+        .from("contacts")
+        .select("id, full_name, role, phone, email, is_primary")
+        .eq("company_id", company.id),
       supa
         .from("projects")
         .select("id, name, status, service_type, value_bob, target_end_date")
@@ -71,10 +75,16 @@ runTool({
           assigned_to: assignedTo?.full_name ?? null,
           primary_persona: persona?.name ?? null,
         },
-        contacts: contacts ?? [],
+        contacts: cap(contacts ?? [], 10),
         active_projects: projects ?? [],
         open_deals: deals ?? [],
-        recent_activities: activities ?? [],
+        recent_activities: (activities ?? []).map((a) => ({
+          id: a.id,
+          type: a.type,
+          channel: a.channel,
+          description: a.description,
+          occurred_at: formatDate(a.occurred_at),
+        })),
       },
       summary,
       requestSummary: `Snapshot de empresa ${company.name} (${company.id}).`,

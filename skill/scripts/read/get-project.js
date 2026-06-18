@@ -2,6 +2,7 @@
 const { runTool } = require("../lib/runner");
 const { getClient } = require("../lib/supabase");
 const { findProjectByAny } = require("../lib/db-helpers");
+const { formatDate, cap } = require("../lib/time");
 
 runTool({
   name: "get-project",
@@ -49,13 +50,21 @@ runTool({
       `${project.name} (${project.status}): ${open.length} tareas abiertas, ${done.length} completadas. ` +
       `Cliente: ${company?.name ?? "?"}. Dueño: ${owner?.full_name ?? "?"}.`;
 
+    const openCapped = cap(open, 10);
+
     return {
       data: {
         project,
         company,
         owner,
-        tasks: { open: open.length, done: done.length, items: open },
-        recent_activities: activities ?? [],
+        tasks: { open: open.length, done: done.length, ...openCapped },
+        recent_activities: (activities ?? []).map((a) => ({
+          id: a.id,
+          type: a.type,
+          channel: a.channel,
+          description: a.description,
+          occurred_at: formatDate(a.occurred_at),
+        })),
       },
       summary,
       requestSummary: `Estado del proyecto ${project.name}.`,

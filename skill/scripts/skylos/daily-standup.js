@@ -6,6 +6,8 @@ const {
   todayIso,
   startOfDayUtc,
   endOfDayUtc,
+  formatDateTime,
+  cap,
 } = require("../lib/time");
 
 const OPEN = ["TODO", "IN_PROGRESS", "BLOCKED"];
@@ -92,15 +94,46 @@ runTool({
       `${overdue?.length ?? 0} vencidas, ${pipelineMoves?.length ?? 0} movimientos de pipeline, ` +
       `${recentActivities.length} interacciones recientes.`;
 
+    const flatTask = (t) => ({
+      id: t.id,
+      title: t.title,
+      status: t.status,
+      priority: t.priority,
+      due_date: t.due_date,
+      project: t.project?.name ?? null,
+    });
+    const flatDeal = (d) => ({
+      id: d.id,
+      title: d.title,
+      stage: d.stage,
+      value_bob: d.value_bob,
+      updated_at: formatDateTime(d.updated_at),
+      company: d.company?.name ?? null,
+    });
+    const flatActivity = (a) => ({
+      id: a.id,
+      type: a.type,
+      channel: a.channel,
+      description: a.description,
+      occurred_at: formatDateTime(a.occurred_at),
+      company: a.company?.name ?? null,
+    });
+    const flatReminder = (r) => ({
+      id: r.id,
+      message: r.message,
+      trigger_at: formatDateTime(r.trigger_at),
+      status: r.status,
+    });
+
     return {
       data: {
         date,
         user: target.email,
-        tasks_due_today: dueToday ?? [],
-        overdue_tasks: overdue ?? [],
-        new_pipeline_movements: pipelineMoves ?? [],
-        recent_activities_on_owned_clients: recentActivities,
-        reminders_today: remindersToday ?? [],
+        tasks_due_today: cap(dueToday ?? [], 10, flatTask),
+        overdue: cap(overdue ?? [], 10, flatTask),
+        pipeline_moves: cap(pipelineMoves ?? [], 10, flatDeal),
+        recent_activities: cap(recentActivities ?? [], 10, flatActivity),
+        reminders: cap(remindersToday ?? [], 10, flatReminder),
       },
       summary,
       requestSummary: `Standup de ${target.email} para ${date}.`,

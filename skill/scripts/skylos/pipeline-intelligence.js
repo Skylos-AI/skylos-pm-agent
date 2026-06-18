@@ -30,7 +30,7 @@ runTool({
     let q = supa
       .from("pipeline_deals")
       .select(
-        "id, title, stage, value_bob, probability, expected_close_date, owner_id, updated_at, created_at, actual_close_date",
+        "id, title, stage, value_bob, probability, expected_close_date, owner_id, updated_at",
       );
     if (ownerId) q = q.eq("owner_id", ownerId);
 
@@ -40,7 +40,7 @@ runTool({
     const now = Date.now();
     const stuckCutoffMs = argv["stuck-days"] * 86400000;
 
-    const stuck = (deals ?? [])
+    const stuckAll = (deals ?? [])
       .filter((d) => !["WON", "LOST"].includes(d.stage))
       .map((d) => ({
         id: d.id,
@@ -54,6 +54,11 @@ runTool({
       .filter((d) => d.days_in_stage > argv["stuck-days"])
       .sort((a, b) => b.days_in_stage - a.days_in_stage);
 
+    const stuck =
+      stuckAll.length > 15
+        ? { items: stuckAll.slice(0, 15), total: stuckAll.length, shown: 15 }
+        : { items: stuckAll, total: stuckAll.length };
+
     const hot = (deals ?? [])
       .filter(
         (d) =>
@@ -62,7 +67,15 @@ runTool({
           now - new Date(d.updated_at).getTime() < stuckCutoffMs,
       )
       .sort((a, b) => (b.probability ?? 0) - (a.probability ?? 0))
-      .slice(0, 10);
+      .slice(0, 10)
+      .map((d) => ({
+        id: d.id,
+        title: d.title,
+        stage: d.stage,
+        value_bob: d.value_bob,
+        probability: d.probability,
+        expected_close_date: d.expected_close_date,
+      }));
 
     // Conversion: how often a deal moves from stage X to a "later" stage vs. dies.
     // Approximation: for each open stage, count deals currently there vs. total
@@ -88,7 +101,7 @@ runTool({
     };
 
     const summary =
-      `${stuck.length} negocios estancados (>${argv["stuck-days"]} días), ${hot.length} calientes. ` +
+      `${stuckAll.length} negocios estancados (>${argv["stuck-days"]} días), ${hot.length} calientes. ` +
       `Conversión propuesta→ganado: ${conversion.proposal_to_won ?? "s/d"}.`;
 
     return {

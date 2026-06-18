@@ -22,7 +22,7 @@ runTool({
     let q = supa
       .from("tasks")
       .select(
-        "id, title, status, priority, due_date, completed_at, project:projects(id, name)",
+        "id, title, status, priority, due_date, project:projects(name)",
       )
       .eq("assignee_id", user.id)
       .order("due_date", { ascending: true, nullsFirst: false })
@@ -39,7 +39,12 @@ runTool({
 
     const today = todayIso();
     const tasks = (data ?? []).map((t) => ({
-      ...t,
+      id: t.id,
+      title: t.title,
+      status: t.status,
+      priority: t.priority,
+      due_date: t.due_date,
+      project: t.project?.name ?? null,
       is_overdue:
         argv["include-overdue"] &&
         t.due_date &&

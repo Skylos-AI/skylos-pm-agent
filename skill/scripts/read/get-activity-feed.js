@@ -2,6 +2,7 @@
 const { runTool } = require("../lib/runner");
 const { getClient } = require("../lib/supabase");
 const { appError } = require("../lib/envelope");
+const { formatDateTime } = require("../lib/time");
 
 runTool({
   name: "get-activity-feed",
@@ -33,7 +34,7 @@ runTool({
     let q = supa
       .from("activities")
       .select(
-        "id, type, channel, description, occurred_at, company:companies(id, name), project:projects(id, name)",
+        "id, type, channel, description, occurred_at, company:companies(name), project:projects(name)",
       )
       .gte("occurred_at", since)
       .order("occurred_at", { ascending: false })
@@ -51,8 +52,18 @@ runTool({
         ? "Sin actividades en el rango."
         : `${data.length} actividades en los últimos ${argv.since ? "días filtrados" : "7 días"}.`;
 
+    const activities = (data ?? []).map((a) => ({
+      id: a.id,
+      type: a.type,
+      channel: a.channel,
+      description: a.description,
+      occurred_at: formatDateTime(a.occurred_at),
+      company: a.company?.name ?? null,
+      project: a.project?.name ?? null,
+    }));
+
     return {
-      data: { activities: data ?? [] },
+      data: { activities },
       summary,
       requestSummary: `Feed de actividades since=${since}, limit=${argv.limit}.`,
     };

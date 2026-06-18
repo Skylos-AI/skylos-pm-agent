@@ -79,6 +79,25 @@ function daysBetween(from, to) {
   );
 }
 
+function formatDate(ts) {
+  if (!ts) return null;
+  if (typeof ts === "string" && /^\d{4}-\d{2}-\d{2}$/.test(ts)) return ts;
+  return formatInTimeZone(typeof ts === "string" ? parseISO(ts) : ts, TZ, "yyyy-MM-dd");
+}
+
+function formatDateTime(ts) {
+  if (!ts) return null;
+  return formatInTimeZone(typeof ts === "string" ? parseISO(ts) : ts, TZ, "yyyy-MM-dd HH:mm");
+}
+
+function cap(arr, n, mapFn) {
+  const src = arr ?? [];
+  const items = src.slice(0, n).map(mapFn ?? ((x) => x));
+  return src.length > n
+    ? { items, total: src.length, shown: n }
+    : { items, total: src.length };
+}
+
 module.exports = {
   TZ,
   nowInTz,
@@ -87,4 +106,7 @@ module.exports = {
   endOfDayUtc,
   parseRelative,
   daysBetween,
+  formatDate,
+  formatDateTime,
+  cap,
 };

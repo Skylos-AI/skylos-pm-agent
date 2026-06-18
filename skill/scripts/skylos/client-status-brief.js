@@ -2,7 +2,7 @@
 const { runTool } = require("../lib/runner");
 const { getClient } = require("../lib/supabase");
 const { findCompanyByAny } = require("../lib/db-helpers");
-const { todayIso, daysBetween } = require("../lib/time");
+const { todayIso, daysBetween, formatDate, cap } = require("../lib/time");
 
 const isUuid = (s) => /^[0-9a-f-]{36}$/i.test(String(s ?? ""));
 
@@ -94,8 +94,20 @@ runTool({
       data: {
         company: { id: company.id, name: company.name, status: company.status },
         active_projects: activeProjectsEnriched,
-        outstanding_tasks: outstandingTasks,
-        recent_activities: activities ?? [],
+        outstanding_tasks: cap(outstandingTasks, 10, (t) => ({
+          id: t.id,
+          title: t.title,
+          status: t.status,
+          priority: t.priority,
+          due_date: t.due_date,
+        })),
+        recent_activities: (activities ?? []).map((a) => ({
+          id: a.id,
+          type: a.type,
+          channel: a.channel,
+          description: a.description,
+          occurred_at: formatDate(a.occurred_at),
+        })),
         open_deals: deals ?? [],
         next_actions_suggested: suggestions,
       },
