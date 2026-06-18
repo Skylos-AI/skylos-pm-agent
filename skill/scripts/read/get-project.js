@@ -2,7 +2,7 @@
 const { runTool } = require("../lib/runner");
 const { getClient } = require("../lib/supabase");
 const { findProjectByAny } = require("../lib/db-helpers");
-const { formatDate, cap } = require("../lib/time");
+const { formatDate, cap, truncate } = require("../lib/time");
 
 runTool({
   name: "get-project",
@@ -62,7 +62,7 @@ runTool({
           id: a.id,
           type: a.type,
           channel: a.channel,
-          description: a.description,
+          description: truncate(a.description),
           occurred_at: formatDate(a.occurred_at),
         })),
       },

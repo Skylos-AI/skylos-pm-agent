@@ -1,6 +1,25 @@
 # skylos-pm — OpenClaw skill
 
-17 Node scripts that give Manu Skylos-specific PM tools over the Supabase schema built in Phase 1. See [SKILL.md](SKILL.md) for the tool index and conventions, and [v2.txt](../../v2.txt) for the full spec.
+17 Node scripts that give Manu Skylos-specific PM tools over the Supabase schema built in Phase 1. See [SKILL.md](SKILL.md) for the tool index, and [v2.txt](../../v2.txt) for the full spec.
+
+## Conventions
+
+- **Responses:** Spanish, voice-friendly. Every tool emits a single JSON envelope `{ok, data, summary}` to stdout.
+- **Identity:** every invocation requires `--as-user <email>` so audit + ownership work.
+- **Logging:** every invocation writes a row to `agent_log` with `tool_called`, `request_summary`, `response_summary`, `entities_affected`, `status`, `duration_ms`.
+- **Errors:** structured envelope with `error.code` ∈ {`NOT_FOUND`, `INVALID_ARGS`, `VALIDATION`, `DB_ERROR`, `VAULT_ERROR`, `UNKNOWN`}. Exit 1 on error, 0 on success.
+- **Schema conventions** (from Phase 1): tables snake_case plural, UUID v4 PKs, BOB currency (Decimal 12,2), `America/La_Paz` TZ, phones in E.164, NIT unique on companies.
+- **Supabase:** project ref `kvtvxawzviqirqbjdsfv` in us-east-2. Agent scripts use `@supabase/supabase-js` with `service_role` from vault.
+
+## Assets
+
+`assets/` ships with the skill bundle and holds static files Manu reads at runtime:
+
+- `assets/proposals/*.md` — proposal templates with `{{placeholders}}` consumed by `fill-proposal`.
+- `assets/brand/` — voice guide, palette JSON, logo SVG.
+- `assets/personas/*.md` — enriched persona briefs (longer than what fits in the DB row); useful for Manu's context when drafting outreach.
+
+See `assets/README.md` for the full layout.
 
 ## Local development
 
@@ -11,6 +30,12 @@ npm install
 export SUPABASE_URL=https://kvtvxawzviqirqbjdsfv.supabase.co
 export SUPABASE_SERVICE_ROLE=eyJ...
 node scripts/read/get-my-tasks.js --as-user jhonny@skylos.io --status open
+```
+
+## Invocation
+
+```bash
+node scripts/read/get-my-tasks.js --as-user jhonny@skylos.io --status open --limit 10
 ```
 
 ## Deploy

@@ -2,7 +2,7 @@
 const { runTool } = require("../lib/runner");
 const { getClient } = require("../lib/supabase");
 const { appError } = require("../lib/envelope");
-const { formatDateTime } = require("../lib/time");
+const { formatDateTime, truncate } = require("../lib/time");
 
 runTool({
   name: "get-activity-feed",
@@ -56,7 +56,7 @@ runTool({
       id: a.id,
       type: a.type,
       channel: a.channel,
-      description: a.description,
+      description: truncate(a.description),
       occurred_at: formatDateTime(a.occurred_at),
       company: a.company?.name ?? null,
       project: a.project?.name ?? null,

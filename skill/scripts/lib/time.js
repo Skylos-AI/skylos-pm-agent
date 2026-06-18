@@ -98,6 +98,11 @@ function cap(arr, n, mapFn) {
     : { items, total: src.length };
 }
 
+function truncate(s, n = 200) {
+  if (!s || typeof s !== "string") return s;
+  return s.length > n ? s.slice(0, n).trimEnd() + "…" : s;
+}
+
 module.exports = {
   TZ,
   nowInTz,
@@ -109,4 +114,5 @@ module.exports = {
   formatDate,
   formatDateTime,
   cap,
+  truncate,
 };

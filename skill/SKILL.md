@@ -15,18 +15,9 @@ metadata:
 
 # Skylos PM
 
-Internal project management tools for the 3-person Skylos team (founder Jhonny, sales Eduardo, delivery Claudio). Backed by Supabase project `kvtvxawzviqirqbjdsfv` (us-east-2).
-
-## Conventions
-
-- **Responses:** Spanish, voice-friendly. Every tool emits a single JSON envelope to stdout.
-- **Identity:** every invocation requires `--as-user <email>` so audit + ownership work.
-- **Logging:** every invocation writes a row to `agent_log` with `tool_called`, `request_summary`, `response_summary`, `entities_affected`, `status`, `duration_ms`.
-- **Errors:** structured envelope with `error.code` ∈ {`NOT_FOUND`, `INVALID_ARGS`, `VALIDATION`, `DB_ERROR`, `VAULT_ERROR`, `UNKNOWN`}. Exit 1 on error, 0 on success.
+Internal PM tools for the Skylos team backed by Supabase. Spanish, voice-friendly responses. Every invocation requires `--as-user <email>`. Errors return `{ok:false, error:{code, message}}` with codes `NOT_FOUND`, `INVALID_ARGS`, `VALIDATION`, `DB_ERROR`, `VAULT_ERROR`, `UNKNOWN`.
 
 ## Tools
-
-Group: **read** (6) · **write** (5) · **skylos** (7).
 
 | # | Tool | Group | One-liner |
 |---|---|---|---|
@@ -49,36 +40,6 @@ Group: **read** (6) · **write** (5) · **skylos** (7).
 | 17 | `daily-standup` | skylos | Morning brief: tasks, overdue, pipeline moves, recent client activity |
 | 18 | `fill-proposal` | skylos | Fill a proposal template from `assets/proposals/` with company + persona + contact + value |
 
-## Assets
+Each script accepts `--help` and emits a single JSON envelope to stdout. See `scripts/<group>/<tool>.js` for args and output shape.
 
-`assets/` ships with the skill bundle and holds static files Manu reads at
-runtime. See `assets/README.md` for the full layout. Today:
-
-- `assets/proposals/*.md` — proposal templates with `{{placeholders}}`
-  consumed by `fill-proposal`.
-- `assets/brand/` — voice guide, palette JSON, logo SVG.
-- `assets/personas/*.md` — enriched persona briefs (longer than what fits
-  in the DB row); useful for Manu's context when drafting outreach.
-
-See `scripts/<group>/<tool>.js` for args, output shape, and examples. Each script accepts `--help` for usage.
-
-## Invocation
-
-```bash
-node scripts/read/get-my-tasks.js --as-user jhonny@skylos.io --status open --limit 10
-```
-
-## Install
-
-From the VPS:
-
-```bash
-cd /opt/devclaw
-git clone https://github.com/JJJRLP/skylos-pm-agent.git
-```
-
-Then from Manu:
-
-```
-skill_install(source="/opt/devclaw/skylos-pm-agent/skill")
-```
+For dev setup, conventions, assets, install, and deploy info, see [README.md](README.md).

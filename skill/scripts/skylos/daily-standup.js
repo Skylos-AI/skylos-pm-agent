@@ -8,6 +8,7 @@ const {
   endOfDayUtc,
   formatDateTime,
   cap,
+  truncate,
 } = require("../lib/time");
 
 const OPEN = ["TODO", "IN_PROGRESS", "BLOCKED"];
@@ -114,13 +115,13 @@ runTool({
       id: a.id,
       type: a.type,
       channel: a.channel,
-      description: a.description,
+      description: truncate(a.description),
       occurred_at: formatDateTime(a.occurred_at),
       company: a.company?.name ?? null,
     });
     const flatReminder = (r) => ({
       id: r.id,
-      message: r.message,
+      message: truncate(r.message),
       trigger_at: formatDateTime(r.trigger_at),
       status: r.status,
     });

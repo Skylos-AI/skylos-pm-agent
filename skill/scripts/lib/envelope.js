@@ -1,7 +1,6 @@
-function ok(data, summary, agentLogId) {
+function ok(data, summary) {
   const out = { ok: true, data };
   if (summary) out.summary = summary;
-  if (agentLogId) out.agent_log_id = agentLogId;
   return out;
 }
 

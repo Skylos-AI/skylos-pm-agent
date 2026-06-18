@@ -55,7 +55,7 @@ async function runTool({
       requestedByUserId,
     });
 
-    emit(ok(result.data, result.summary, agentLogId), 0);
+    emit(ok(result.data, result.summary), 0);
   } catch (e) {
     const code = e.code || "UNKNOWN";
     const message = e.message || "Error desconocido";
