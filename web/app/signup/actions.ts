@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { isAllowed } from "@/lib/auth/allowlist";
+import { resolveAppOrigin } from "@/lib/auth/origin";
 
 const schema = z
   .object({
@@ -58,11 +59,12 @@ export async function signUp(formData: FormData): Promise<SignupResult> {
   }
 
   const supa = await createClient();
+  const origin = await resolveAppOrigin();
   const { data, error } = await supa.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
+      emailRedirectTo: `${origin}/auth/callback`,
     },
   });
 

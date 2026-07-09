@@ -30,6 +30,7 @@ const CSV_PATH = resolve(__dirname, "..", "data", "DB.csv");
 const CATEGORY_TO_SEGMENT: Record<string, string> = {
   "Logistics & distributors": "logistics",
   "Legal & accounting firms": "legal_accounting",
+  "Legal & accounting": "legal_accounting",
   "Retail chains & franchises": "retail",
   "Private clinics & healthcare": "healthcare",
   "Construction & real estate": "construction_real_estate",
@@ -108,17 +109,11 @@ async function main() {
 
   for (let idx = 0; idx < records.length; idx++) {
     const row = records[idx];
-    const category = row.Category?.trim();
-    const segment = CATEGORY_TO_SEGMENT[category];
-    if (!segment) {
+    const category = row.Category?.trim() ?? "";
+
+    const name = row.Company?.trim();
+    if (!name) {
       skipped++;
-      missingSegments.add(category || "(blank)");
-      continue;
-    }
-    const persona = personaBySegment.get(segment);
-    if (!persona) {
-      skipped++;
-      missingSegments.add(`segment ${segment}`);
       continue;
     }
 
@@ -128,13 +123,13 @@ async function main() {
       continue;
     }
 
-    const name = row.Company?.trim();
-    if (!name) {
-      skipped++;
-      continue;
+    const segment = CATEGORY_TO_SEGMENT[category];
+    const persona = segment ? personaBySegment.get(segment) : null;
+    if (category && !persona) {
+      missingSegments.add(segment ? `segment ${segment}` : category);
     }
 
-    const slug = category
+    const slug = (category || "uncategorized")
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "");
@@ -165,9 +160,9 @@ async function main() {
           where: { id: existing.id },
           data: {
             name,
-            sector: category,
+            sector: category || null,
             source: CompanySource.BASE_UNIFICADA,
-            primaryPersonaId: persona.id,
+            primaryPersonaId: persona ? persona.id : null,
             assignedToId: assignee.id,
             tags,
             notes,
@@ -176,10 +171,10 @@ async function main() {
       : await prisma.company.create({
           data: {
             name,
-            sector: category,
+            sector: category || null,
             source: CompanySource.BASE_UNIFICADA,
             status: CompanyStatus.LEAD,
-            primaryPersonaId: persona.id,
+            primaryPersonaId: persona ? persona.id : null,
             assignedToId: assignee.id,
             externalId,
             tags,
@@ -218,7 +213,10 @@ async function main() {
 
   console.log(`✓ imported/updated ${imported} companies (${skipped} skipped)`);
   if (missingSegments.size > 0) {
-    console.log("  Unmapped categories:", [...missingSegments].join(", "));
+    console.log(
+      "  Imported without persona (unmapped categories):",
+      [...missingSegments].join(", ")
+    );
   }
 }
 

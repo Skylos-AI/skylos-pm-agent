@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { isAllowed } from "@/lib/auth/allowlist";
+import { resolveAppOrigin } from "@/lib/auth/origin";
 
 const schema = z.object({
   email: z.string().email("Correo inválido."),
@@ -34,8 +35,9 @@ export async function requestPasswordReset(
   }
 
   const supa = await createClient();
+  const origin = await resolveAppOrigin();
   const { error } = await supa.auth.resetPasswordForEmail(email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?next=/reset-password`,
+    redirectTo: `${origin}/auth/callback?next=/reset-password`,
   });
 
   if (error) {

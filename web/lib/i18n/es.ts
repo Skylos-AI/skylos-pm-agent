@@ -58,6 +58,12 @@ export const t = {
     submit: "Enviar enlace",
     sending: "Enviando…",
     sent: "Listo. Revisá tu correo para el enlace.",
+    sentTitle: "Revisá tu bandeja de entrada",
+    sentBody:
+      "Te enviamos un enlace para restablecer tu contraseña a:",
+    sentSpamHint:
+      "Si no lo ves en unos minutos, revisá tu carpeta de spam o promociones.",
+    sentTryAnother: "Probar con otro correo",
     notAllowed: "Ese correo no está en el equipo.",
     error: "No pudimos enviar el enlace. Probá de nuevo.",
     backToLogin: "Volver a iniciar sesión",
