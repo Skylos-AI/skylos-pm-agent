@@ -275,10 +275,10 @@ export async function getCompanyDetail(
     website: (c.website as string | null) ?? null,
     notes: (c.notes as string | null) ?? null,
     tags: ((c.tags ?? []) as string[]) || [],
-    assigned_to: (c.assigned_to ?? null) as
+    assigned_to: (c.assigned_to ?? null) as unknown as
       | { id: string; full_name: string; email: string }
       | null,
-    primary_persona: (c.primary_persona ?? null) as
+    primary_persona: (c.primary_persona ?? null) as unknown as
       | { id: string; name: string; segment: string; outreach_template: string }
       | null,
     contacts: (contacts ?? []) as CompanyContact[],

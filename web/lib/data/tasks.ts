@@ -9,7 +9,7 @@ export async function getMyTasks(userId: string): Promise<MyTaskRow[]> {
   const { data } = await supa
     .from("tasks")
     .select(
-      "id, title, status, priority, due_date, estimated_hours, resources, project:projects(id, name), assignee:users!tasks_assignee_id_fkey(id, full_name)",
+      "id, title, description, status, priority, due_date, estimated_hours, resources, project:projects(id, name), assignee:users!tasks_assignee_id_fkey(id, full_name)",
     )
     .eq("assignee_id", userId)
     .order("due_date", { ascending: true, nullsFirst: false })

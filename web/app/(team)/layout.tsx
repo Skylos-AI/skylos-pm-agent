@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth/current-user";
 import { isAllowed } from "@/lib/auth/allowlist";
 import { NavSidebar } from "@/components/pm/nav-sidebar";
+import { PageTransition } from "@/components/pm/page-transition";
 
 export default async function TeamLayout({
   children,
@@ -15,7 +16,9 @@ export default async function TeamLayout({
   return (
     <div className="min-h-screen flex">
       <NavSidebar userFullName={user.full_name} userEmail={user.email} />
-      <main className="flex-1 min-w-0">{children}</main>
+      <main className="flex-1 min-w-0">
+        <PageTransition>{children}</PageTransition>
+      </main>
     </div>
   );
 }

@@ -9,6 +9,32 @@ import type { AgentLogRow } from "@/lib/types/activity";
 const SOURCES = ["WHATSAPP", "CRON", "WEB", "MANUAL_TEST"] as const;
 const STATUSES = ["SUCCESS", "ERROR", "PARTIAL"] as const;
 
+function humanize(slug: string): string {
+  const clean = slug.replace(/^[a-z]+:/i, "").replace(/[_-]+/g, " ").trim();
+  if (!clean) return slug;
+  return clean.charAt(0).toUpperCase() + clean.slice(1);
+}
+
+function actionLabel(row: AgentLogRow): string {
+  const mapped = t.agentLog.actionByType[row.action_type];
+  if (mapped) return mapped;
+  const [bucket, ...rest] = (row.action_type || "").split(".");
+  const subject = rest.join(".") || row.tool_called;
+  const subjectHuman = humanize(subject);
+  switch (bucket) {
+    case "read":
+      return `${t.agentLog.actionFallbackRead}: ${subjectHuman}`;
+    case "write":
+      return `${t.agentLog.actionFallbackWrite}: ${subjectHuman}`;
+    case "list":
+      return `${t.agentLog.actionFallbackList}: ${subjectHuman}`;
+    case "search":
+      return `${t.agentLog.actionFallbackSearch}: ${subjectHuman}`;
+    default:
+      return humanize(row.tool_called || t.agentLog.actionFallbackOther);
+  }
+}
+
 export function AgentLogFilterBar({
   tools,
   users,
@@ -136,14 +162,15 @@ export function AgentLogTable({ entries }: { entries: AgentLogRow[] }) {
       <table className="w-full text-sm">
         <thead className="bg-[var(--brand-bg)]">
           <tr className="text-xs uppercase tracking-wide text-[var(--brand-fg-muted)]">
+            <th className="text-left px-3 py-3 font-medium w-8" />
             <th className="text-left px-3 py-3 font-medium">
               {t.agentLog.columnWhen}
             </th>
             <th className="text-left px-3 py-3 font-medium">
-              {t.agentLog.columnSource}
+              {t.agentLog.columnAction}
             </th>
             <th className="text-left px-3 py-3 font-medium">
-              {t.agentLog.columnTool}
+              {t.agentLog.columnSource}
             </th>
             <th className="text-left px-3 py-3 font-medium">
               {t.agentLog.columnUser}
@@ -153,9 +180,6 @@ export function AgentLogTable({ entries }: { entries: AgentLogRow[] }) {
             </th>
             <th className="text-right px-3 py-3 font-medium">
               {t.agentLog.columnDuration}
-            </th>
-            <th className="text-left px-3 py-3 font-medium">
-              {t.agentLog.columnSummary}
             </th>
           </tr>
         </thead>
@@ -189,19 +213,37 @@ function AgentLogRowComp({
       : row.status === "PARTIAL"
         ? "bg-[var(--brand-fg-muted)]/10 text-[var(--brand-fg-muted)]"
         : "bg-[var(--brand-cyan)]/10 text-[var(--brand-cyan)]";
+  const label = actionLabel(row);
   return (
     <>
       <tr
         onClick={onToggle}
+        title={t.agentLog.expandHint}
         className="hover:bg-[var(--brand-bg)] transition cursor-pointer"
       >
+        <td className="px-3 py-3 w-8 text-[var(--brand-fg-muted)] text-xs select-none">
+          <span
+            className="inline-block transition-transform"
+            style={{ transform: expanded ? "rotate(90deg)" : "none" }}
+            aria-hidden="true"
+          >
+            ▸
+          </span>
+        </td>
         <td className="px-3 py-3 text-xs text-[var(--brand-fg-muted)] whitespace-nowrap">
           {formatDateTime(row.created_at)}
+        </td>
+        <td className="px-3 py-3">
+          <p className="text-sm font-medium text-[var(--brand-fg)]">{label}</p>
+          {row.request_summary && (
+            <p className="text-xs text-[var(--brand-fg-muted)] truncate max-w-[480px] mt-0.5">
+              {row.request_summary}
+            </p>
+          )}
         </td>
         <td className="px-3 py-3 text-xs">
           {t.agentLog.sourceLabel[row.source] ?? row.source}
         </td>
-        <td className="px-3 py-3 font-mono text-xs">{row.tool_called}</td>
         <td className="px-3 py-3 text-xs text-[var(--brand-fg-muted)]">
           {row.requested_by?.full_name ?? "—"}
         </td>
@@ -215,14 +257,14 @@ function AgentLogRowComp({
         <td className="px-3 py-3 text-xs text-right text-[var(--brand-fg-muted)]">
           {row.duration_ms != null ? `${row.duration_ms} ms` : "—"}
         </td>
-        <td className="px-3 py-3 text-xs">
-          <p className="truncate max-w-[400px]">{row.request_summary}</p>
-        </td>
       </tr>
       {expanded && (
         <tr className="bg-[var(--brand-bg)]">
           <td colSpan={7} className="px-4 py-4">
-            <DetailBlock label={t.agentLog.detailRequest} text={row.request_summary} />
+            <DetailBlock
+              label={t.agentLog.detailRequest}
+              text={row.request_summary}
+            />
             <DetailBlock
               label={t.agentLog.detailResponse}
               text={row.response_summary}
@@ -239,6 +281,29 @@ function AgentLogRowComp({
               text={JSON.stringify(row.entities_affected ?? [], null, 2)}
               mono
             />
+            <div className="mt-3 pt-3 border-t border-[var(--brand-border)]">
+              <p className="text-xs uppercase tracking-wide text-[var(--brand-fg-muted)] mb-2">
+                {t.agentLog.detailTechnical}
+              </p>
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-xs">
+                <div className="flex gap-2">
+                  <dt className="text-[var(--brand-fg-muted)] min-w-[110px]">
+                    {t.agentLog.detailToolLabel}
+                  </dt>
+                  <dd className="font-mono text-[var(--brand-fg)]">
+                    {row.tool_called}
+                  </dd>
+                </div>
+                <div className="flex gap-2">
+                  <dt className="text-[var(--brand-fg-muted)] min-w-[110px]">
+                    {t.agentLog.detailActionType}
+                  </dt>
+                  <dd className="font-mono text-[var(--brand-fg)]">
+                    {row.action_type || "—"}
+                  </dd>
+                </div>
+              </dl>
+            </div>
           </td>
         </tr>
       )}

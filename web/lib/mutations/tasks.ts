@@ -101,6 +101,89 @@ export async function createTask(
   return { ok: true, data: { id: data.id }, agent_log_id: agentLogId };
 }
 
+const updateDescriptionSchema = z.object({
+  id: z.string().uuid(),
+  description: z.string().max(500, "La nota no puede superar 500 caracteres."),
+});
+
+export async function updateTaskDescription(
+  input: z.infer<typeof updateDescriptionSchema>,
+): Promise<Envelope<{ id: string }>> {
+  const parsed = updateDescriptionSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: {
+        code: "INVALID_ARGS",
+        message: parsed.error.issues[0]?.message ?? "Datos inválidos.",
+      },
+    };
+  }
+  const user = await currentUser();
+  if (!user)
+    return { ok: false, error: { code: "NOT_AUTH", message: "No autenticado." } };
+
+  const supa = createServiceRoleClient();
+  const startedAt = Date.now();
+  const trimmed = parsed.data.description.trim();
+
+  const { data: existing } = await supa
+    .from("tasks")
+    .select("id, title, project_id")
+    .eq("id", parsed.data.id)
+    .maybeSingle();
+  if (!existing)
+    return {
+      ok: false,
+      error: { code: "NOT_FOUND", message: "Tarea no encontrada." },
+    };
+
+  const { data, error } = await supa
+    .from("tasks")
+    .update({ description: trimmed.length ? trimmed : null })
+    .eq("id", parsed.data.id)
+    .select("id")
+    .single();
+
+  const durationMs = Date.now() - startedAt;
+  if (error || !data) {
+    await writeAgentLog({
+      source: "WEB",
+      toolCalled: "web:update-task-description",
+      actionType: "write.task_update_description",
+      requestSummary: `Editar nota de tarea ${parsed.data.id}.`,
+      responseSummary: error?.message ?? "Error",
+      status: "ERROR",
+      errorMessage: error?.message ?? null,
+      durationMs,
+      requestedByUserId: user.id,
+    });
+    return {
+      ok: false,
+      error: {
+        code: "DB_ERROR",
+        message: error?.message ?? "Error actualizando nota.",
+      },
+    };
+  }
+
+  const agentLogId = await writeAgentLog({
+    source: "WEB",
+    toolCalled: "web:update-task-description",
+    actionType: "write.task_update_description",
+    requestSummary: `Editar nota de tarea "${existing.title}".`,
+    responseSummary: trimmed.length ? "Nota actualizada." : "Nota eliminada.",
+    entitiesAffected: [{ table: "tasks", id: data.id }],
+    status: "SUCCESS",
+    durationMs,
+    requestedByUserId: user.id,
+  });
+
+  revalidatePath("/tasks");
+  if (existing.project_id) revalidatePath(`/projects/${existing.project_id}`);
+  return { ok: true, data: { id: data.id }, agent_log_id: agentLogId };
+}
+
 const updateStatusSchema = z.object({
   id: z.string().uuid(),
   status: z.enum(STATUSES),

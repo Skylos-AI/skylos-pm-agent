@@ -53,10 +53,9 @@ export async function getPipelineBoard(
 export function groupByStage(
   deals: PipelineDealRow[],
 ): Record<Stage, PipelineDealRow[]> {
-  const out = Object.fromEntries(STAGES.map((s) => [s, []])) as Record<
-    Stage,
-    PipelineDealRow[]
-  >;
+  const out = Object.fromEntries(
+    STAGES.map((s) => [s, [] as PipelineDealRow[]]),
+  ) as Record<Stage, PipelineDealRow[]>;
   for (const d of deals) out[d.stage].push(d);
   return out;
 }

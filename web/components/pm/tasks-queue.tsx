@@ -6,8 +6,19 @@ import { formatDate } from "@/lib/format/date";
 import { t } from "@/lib/i18n/es";
 import { TaskStatusPill } from "@/components/pm/status-pill";
 import { Modal } from "@/components/pm/modal";
-import { createTask, updateTaskStatus } from "@/lib/mutations/tasks";
+import {
+  createTask,
+  updateTaskDescription,
+  updateTaskStatus,
+} from "@/lib/mutations/tasks";
 import type { MyTaskRow, TaskStatus } from "@/lib/types/tasks";
+
+function isOverdue(row: MyTaskRow): boolean {
+  if (!row.due_date || row.status === "DONE") return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return new Date(row.due_date) < today;
+}
 
 const TABS = [
   { key: "ALL", label: t.tasks.tabAll, match: () => true },
@@ -25,6 +36,11 @@ const TABS = [
     key: "BLOCKED",
     label: t.tasks.tabBlocked,
     match: (r: MyTaskRow) => r.status === "BLOCKED",
+  },
+  {
+    key: "OVERDUE",
+    label: t.tasks.tabOverdue,
+    match: (r: MyTaskRow) => isOverdue(r),
   },
   {
     key: "DONE",
@@ -63,6 +79,7 @@ export function TasksQueue({
   );
   const [richDue, setRichDue] = useState("");
   const [richHours, setRichHours] = useState("");
+  const [richDescription, setRichDescription] = useState("");
   const [richResources, setRichResources] = useState("");
   const [richError, setRichError] = useState<string | null>(null);
 
@@ -140,6 +157,7 @@ export function TasksQueue({
         priority: richPriority,
         dueDate: richDue ? new Date(richDue).toISOString() : null,
         estimatedHours: richHours ? Number(richHours) : undefined,
+        description: richDescription.trim() || undefined,
         resources: richResources.trim() || undefined,
       });
       if (!res.ok) {
@@ -152,6 +170,7 @@ export function TasksQueue({
       setRichPriority("MEDIUM");
       setRichDue("");
       setRichHours("");
+      setRichDescription("");
       setRichResources("");
       router.refresh();
     });
@@ -400,6 +419,19 @@ export function TasksQueue({
           </div>
           <label className="block">
             <span className="text-xs text-[var(--brand-fg-muted)] uppercase tracking-wide">
+              {t.tasks.noteLabel}
+            </span>
+            <textarea
+              rows={2}
+              maxLength={500}
+              value={richDescription}
+              onChange={(e) => setRichDescription(e.target.value)}
+              placeholder={t.tasks.notePlaceholder}
+              className="mt-1 w-full text-sm border border-[var(--brand-border)] rounded-md px-3 py-2 resize-none focus:outline-none focus:border-[var(--brand-blue)]"
+            />
+          </label>
+          <label className="block">
+            <span className="text-xs text-[var(--brand-fg-muted)] uppercase tracking-wide">
               {t.projects.newTaskResources}
             </span>
             <textarea
@@ -451,6 +483,11 @@ function TaskRow({
   const [pending, startTransition] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const [showResources, setShowResources] = useState(false);
+  const [description, setDescription] = useState(row.description ?? "");
+  const [editingNote, setEditingNote] = useState(false);
+  const [noteDraft, setNoteDraft] = useState(row.description ?? "");
+  const [noteErr, setNoteErr] = useState<string | null>(null);
+  const [savingNote, startNoteTransition] = useTransition();
 
   function onChange(next: TaskStatus) {
     const prev = status;
@@ -467,7 +504,33 @@ function TaskRow({
     });
   }
 
+  function saveNote() {
+    setNoteErr(null);
+    const next = noteDraft.trim().slice(0, 500);
+    startNoteTransition(async () => {
+      const res = await updateTaskDescription({
+        id: row.id,
+        description: next,
+      });
+      if (!res.ok) {
+        setNoteErr(res.error.message);
+        return;
+      }
+      setDescription(next);
+      setEditingNote(false);
+      onRefresh();
+    });
+  }
+
+  function cancelNote() {
+    setNoteDraft(description);
+    setEditingNote(false);
+    setNoteErr(null);
+  }
+
   const hasResources = Boolean(row.resources && row.resources.trim().length);
+  const overdue = isOverdue(row);
+  const hasNote = Boolean(description && description.trim().length);
 
   return (
     <>
@@ -483,6 +546,11 @@ function TaskRow({
         <td className="px-3 py-3">
           <div className="flex items-baseline gap-2 flex-wrap">
             <p className="font-medium">{row.title}</p>
+            {overdue && (
+              <span className="text-xs font-medium px-1.5 py-0.5 rounded-full bg-[var(--brand-magenta)]/10 text-[var(--brand-magenta)] border border-[var(--brand-magenta)]/30">
+                {t.tasks.overdueBadge}
+              </span>
+            )}
             {row.estimated_hours != null && (
               <span className="text-xs text-[var(--brand-fg-muted)] bg-[var(--brand-bg)] px-1.5 py-0.5 rounded">
                 ⏱ {row.estimated_hours}h
@@ -497,7 +565,74 @@ function TaskRow({
                 📎 {showResources ? "Ocultar" : "Recursos"}
               </button>
             )}
+            {!hasNote && !editingNote && (
+              <button
+                type="button"
+                onClick={() => {
+                  setNoteDraft("");
+                  setEditingNote(true);
+                }}
+                className="text-xs text-[var(--brand-blue)] hover:underline"
+                title="Agregar nota"
+              >
+                + {t.tasks.addNote}
+              </button>
+            )}
           </div>
+          {hasNote && !editingNote && (
+            <button
+              type="button"
+              onClick={() => {
+                setNoteDraft(description);
+                setEditingNote(true);
+              }}
+              className="mt-1 block text-left text-xs italic text-[var(--brand-fg-muted)] hover:text-[var(--brand-fg)] cursor-text max-w-md line-clamp-2"
+              title="Editar nota"
+            >
+              📝 {description}
+            </button>
+          )}
+          {editingNote && (
+            <div className="mt-2 max-w-md space-y-1">
+              <textarea
+                autoFocus
+                value={noteDraft}
+                maxLength={500}
+                rows={2}
+                onChange={(e) => setNoteDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") cancelNote();
+                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) saveNote();
+                }}
+                placeholder={t.tasks.notePlaceholder}
+                className="w-full text-xs border border-[var(--brand-border)] rounded-md px-2 py-1.5 resize-none focus:outline-none focus:border-[var(--brand-blue)]"
+              />
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={saveNote}
+                  disabled={savingNote}
+                  className="px-2 py-0.5 text-xs rounded bg-[var(--brand-blue)] text-white disabled:opacity-50"
+                >
+                  {savingNote ? "…" : t.tasks.noteSave}
+                </button>
+                <button
+                  type="button"
+                  onClick={cancelNote}
+                  disabled={savingNote}
+                  className="text-xs text-[var(--brand-fg-muted)] hover:text-[var(--brand-fg)]"
+                >
+                  {t.tasks.noteCancel}
+                </button>
+                <span className="text-xs text-[var(--brand-fg-muted)] ml-auto tabular-nums">
+                  {noteDraft.length}/500
+                </span>
+              </div>
+              {noteErr && (
+                <p className="text-xs text-[var(--brand-magenta)]">{noteErr}</p>
+              )}
+            </div>
+          )}
           {err && <p className="text-xs text-[var(--brand-magenta)]">{err}</p>}
         </td>
         <td className="px-3 py-3 text-[var(--brand-fg-muted)] text-xs">
@@ -506,7 +641,13 @@ function TaskRow({
         <td className="px-3 py-3 text-[var(--brand-fg-muted)] text-xs">
           {row.project?.name ?? "—"}
         </td>
-        <td className="px-3 py-3 text-[var(--brand-fg-muted)] text-xs">
+        <td
+          className={`px-3 py-3 text-xs ${
+            overdue
+              ? "text-[var(--brand-magenta)] font-medium"
+              : "text-[var(--brand-fg-muted)]"
+          }`}
+        >
           {formatDate(row.due_date)}
         </td>
         <td className="px-3 py-3 text-xs">{t.priority[row.priority]}</td>
