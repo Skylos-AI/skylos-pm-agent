@@ -1,23 +1,28 @@
 "use server";
 
 import { z } from "zod";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isAllowed } from "@/lib/auth/allowlist";
 
 const schema = z.object({
   email: z.string().email("Correo inválido."),
+  password: z.string().min(1, "Contraseña requerida."),
 });
 
 export type LoginResult =
-  | { ok: true; sentTo: string }
-  | { ok: false; code: "INVALID" | "NOT_ALLOWED" | "SEND_FAILED"; message: string };
+  | { ok: false; code: "INVALID" | "NOT_ALLOWED" | "INVALID_CREDENTIALS" | "EMAIL_NOT_CONFIRMED" | "SIGN_IN_FAILED"; message: string };
 
-export async function sendMagicLink(formData: FormData): Promise<LoginResult> {
-  const parsed = schema.safeParse({ email: formData.get("email") });
+export async function signInWithPassword(formData: FormData): Promise<LoginResult> {
+  const parsed = schema.safeParse({
+    email: formData.get("email"),
+    password: formData.get("password"),
+  });
   if (!parsed.success) {
     return { ok: false, code: "INVALID", message: parsed.error.issues[0].message };
   }
   const email = parsed.data.email.toLowerCase();
+  const password = parsed.data.password;
 
   if (!isAllowed(email)) {
     return {
@@ -28,15 +33,26 @@ export async function sendMagicLink(formData: FormData): Promise<LoginResult> {
   }
 
   const supa = await createClient();
-  const { error } = await supa.auth.signInWithOtp({
-    email,
-    options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
-    },
-  });
+  const { error } = await supa.auth.signInWithPassword({ email, password });
 
   if (error) {
-    return { ok: false, code: "SEND_FAILED", message: error.message };
+    const msg = error.message.toLowerCase();
+    if (msg.includes("email not confirmed")) {
+      return {
+        ok: false,
+        code: "EMAIL_NOT_CONFIRMED",
+        message: "Confirmá tu correo antes de iniciar sesión — revisá tu bandeja.",
+      };
+    }
+    if (msg.includes("invalid login credentials")) {
+      return {
+        ok: false,
+        code: "INVALID_CREDENTIALS",
+        message: "Correo o contraseña incorrectos.",
+      };
+    }
+    return { ok: false, code: "SIGN_IN_FAILED", message: error.message };
   }
-  return { ok: true, sentTo: email };
+
+  redirect("/dashboard");
 }
