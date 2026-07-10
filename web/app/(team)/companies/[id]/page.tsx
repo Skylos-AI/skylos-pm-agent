@@ -9,6 +9,7 @@ import { LogActivityButton } from "@/components/pm/log-activity-button";
 import {
   ConvertToClientButton,
   NewProjectButton,
+  AddToPipelineButton,
 } from "@/components/pm/company-phase-actions";
 import { formatBob } from "@/lib/format/currency";
 import { formatDate, formatRelative } from "@/lib/format/date";
@@ -90,6 +91,11 @@ export default async function CompanyDetailPage({
               persona={company.primary_persona}
             />
             <LogActivityButton companyId={company.id} contacts={contactsForLog} />
+            <AddToPipelineButton
+              companyId={company.id}
+              companyName={company.name}
+              currentStatus={company.status}
+            />
             <ConvertToClientButton
               companyId={company.id}
               currentStatus={company.status}

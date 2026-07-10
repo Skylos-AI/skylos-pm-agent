@@ -1,6 +1,6 @@
 ---
 name: skylos-pm
-description: Skylos project management — 17 tools for managing tasks, projects, pipeline, companies, and daily briefings. Backed by Supabase. Responds in Spanish.
+description: Skylos project management — 19 tools for managing tasks, projects, pipeline, companies, and daily briefings. Backed by Supabase. Responds in Spanish.
 metadata:
   openclaw:
     emoji: "📊"
@@ -32,13 +32,14 @@ Internal PM tools for the Skylos team backed by Supabase. Spanish, voice-friendl
 | 9 | `log-activity` | write | Record a call/meeting/message |
 | 10 | `update-pipeline-deal` | write | Move stage, set value, close date |
 | 11 | `create-reminder` | write | Schedule a future ping |
-| 12 | `query-base-unificada` | skylos | Rank best LEAD candidates from seeded list |
-| 13 | `draft-outreach` | skylos | Personalized first-touch message using persona template |
-| 14 | `pipeline-intelligence` | skylos | Stuck deals (>14d), hot leads, conversion rates |
-| 15 | `client-status-brief` | skylos | Full brief on one active client |
-| 16 | `project-follow-up` | skylos | Progress check: pace, blockers, milestones, suggested actions |
-| 17 | `daily-standup` | skylos | Morning brief: tasks, overdue, pipeline moves, recent client activity |
-| 18 | `fill-proposal` | skylos | Fill a proposal template from `assets/proposals/` with company + persona + contact + value |
+| 12 | `create-pipeline-deal` | write | New deal for a company; default stage LEAD, default owner = caller |
+| 13 | `query-base-unificada` | skylos | Rank best LEAD candidates from seeded list |
+| 14 | `draft-outreach` | skylos | Personalized first-touch message using persona template |
+| 15 | `pipeline-intelligence` | skylos | Stuck deals (>14d), hot leads, conversion rates |
+| 16 | `client-status-brief` | skylos | Full brief on one active client |
+| 17 | `project-follow-up` | skylos | Progress check: pace, blockers, milestones, suggested actions |
+| 18 | `daily-standup` | skylos | Morning brief: tasks, overdue, pipeline moves, recent client activity |
+| 19 | `fill-proposal` | skylos | Fill a proposal template from `assets/proposals/` with company + persona + contact + value |
 
 Each script accepts `--help` and emits a single JSON envelope to stdout. See `scripts/<group>/<tool>.js` for args and output shape.
 

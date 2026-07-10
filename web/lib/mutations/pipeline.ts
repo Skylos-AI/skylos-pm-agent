@@ -132,3 +132,110 @@ export async function updatePipelineDeal(
     agent_log_id: agentLogId,
   };
 }
+
+const createSchema = z.object({
+  companyId: z.string().uuid(),
+  title: z.string().min(1, "El título es obligatorio."),
+  stage: z.enum(STAGES).default("LEAD"),
+  valueBob: z.number().nonnegative().optional(),
+  probability: z.number().int().min(0).max(100).optional(),
+  expectedCloseDate: z.string().optional(),
+  ownerId: z.string().uuid().optional(),
+});
+
+export async function createPipelineDeal(
+  input: z.infer<typeof createSchema>,
+): Promise<Envelope<{ id: string; stage: string }>> {
+  const parsed = createSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: {
+        code: "INVALID_ARGS",
+        message: parsed.error.issues[0]?.message ?? "Datos inválidos.",
+      },
+    };
+  }
+  const user = await currentUser();
+  if (!user)
+    return { ok: false, error: { code: "NOT_AUTH", message: "No autenticado." } };
+
+  const supa = createServiceRoleClient();
+  const startedAt = Date.now();
+
+  const { data: company } = await supa
+    .from("companies")
+    .select("id, name")
+    .eq("id", parsed.data.companyId)
+    .maybeSingle();
+  if (!company)
+    return {
+      ok: false,
+      error: { code: "NOT_FOUND", message: "Empresa no encontrada." },
+    };
+
+  const insert: Record<string, string | number | null> = {
+    company_id: parsed.data.companyId,
+    title: parsed.data.title,
+    stage: parsed.data.stage,
+    owner_id: parsed.data.ownerId ?? user.id,
+  };
+  if (typeof parsed.data.valueBob === "number")
+    insert.value_bob = parsed.data.valueBob.toFixed(2);
+  if (typeof parsed.data.probability === "number")
+    insert.probability = parsed.data.probability;
+  if (parsed.data.expectedCloseDate)
+    insert.expected_close_date = parsed.data.expectedCloseDate;
+
+  const { data, error } = await supa
+    .from("pipeline_deals")
+    .insert(insert)
+    .select("id, stage")
+    .single();
+
+  const durationMs = Date.now() - startedAt;
+  if (error || !data) {
+    await writeAgentLog({
+      source: "WEB",
+      toolCalled: "web:create-pipeline-deal",
+      actionType: "write.deal_create",
+      requestSummary: `Crear negocio "${parsed.data.title}" para ${company.name}.`,
+      responseSummary: error?.message ?? "Error",
+      status: "ERROR",
+      errorMessage: error?.message ?? null,
+      durationMs,
+      requestedByUserId: user.id,
+    });
+    return {
+      ok: false,
+      error: {
+        code: "DB_ERROR",
+        message: error?.message ?? "Error creando negocio.",
+      },
+    };
+  }
+
+  const agentLogId = await writeAgentLog({
+    source: "WEB",
+    toolCalled: "web:create-pipeline-deal",
+    actionType: "write.deal_create",
+    requestSummary: `Crear negocio "${parsed.data.title}" para ${company.name} en ${parsed.data.stage} desde web.`,
+    responseSummary: `Negocio ${data.id} creado en stage ${data.stage}.`,
+    entitiesAffected: [
+      { table: "pipeline_deals", id: data.id },
+      { table: "companies", id: parsed.data.companyId },
+    ],
+    status: "SUCCESS",
+    durationMs,
+    requestedByUserId: user.id,
+  });
+
+  revalidatePath("/pipeline");
+  revalidatePath("/dashboard");
+  revalidatePath(`/companies/${parsed.data.companyId}`);
+  return {
+    ok: true,
+    data: { id: data.id, stage: data.stage },
+    agent_log_id: agentLogId,
+  };
+}
