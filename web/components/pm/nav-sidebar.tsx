@@ -14,6 +14,8 @@ import {
   ScrollText,
   BookOpen,
   LogOut,
+  Target,
+  Package,
 } from "lucide-react";
 import { t } from "@/lib/i18n/es";
 
@@ -22,6 +24,8 @@ const nav = [
   { href: "/pipeline", label: t.nav.pipeline, icon: KanbanSquare },
   { href: "/projects", label: t.nav.projects, icon: FolderKanban },
   { href: "/companies", label: t.nav.companies, icon: Building2 },
+  { href: "/outreach", label: "Outreach", icon: Target },
+  { href: "/assets", label: "Assets", icon: Package },
   { href: "/tasks", label: t.nav.tasks, icon: ListTodo },
   { href: "/activity", label: t.nav.activity, icon: Activity },
   { href: "/standup", label: t.nav.standup, icon: Sun },

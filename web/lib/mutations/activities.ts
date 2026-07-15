@@ -24,15 +24,28 @@ const CHANNELS = [
   "VIDEO_CALL",
   "OTHER",
 ] as const;
+const OUTCOMES = [
+  "NO_ANSWER",
+  "REACHED",
+  "INTERESTED",
+  "NOT_INTERESTED",
+  "CALLBACK_REQUESTED",
+  "MEETING_SCHEDULED",
+  "VOICEMAIL_LEFT",
+  "NEUTRAL",
+] as const;
 
 const schema = z.object({
   companyId: z.string().uuid(),
   type: z.enum(TYPES),
   channel: z.enum(CHANNELS).default("OTHER"),
+  outcome: z.enum(OUTCOMES).optional(),
+  assetId: z.string().uuid().nullable().optional(),
   description: z.string().min(1, "La descripción es obligatoria."),
   projectId: z.string().uuid().nullable().optional(),
   contactId: z.string().uuid().nullable().optional(),
   occurredAt: z.string().optional(),
+  nextTouchAt: z.string().optional(),
 });
 
 type Envelope<T> =
@@ -65,8 +78,10 @@ export async function logActivity(
       company_id: parsed.data.companyId,
       contact_id: parsed.data.contactId ?? null,
       project_id: parsed.data.projectId ?? null,
+      asset_id: parsed.data.assetId ?? null,
       type: parsed.data.type,
       channel: parsed.data.channel,
+      outcome: parsed.data.outcome ?? null,
       description: parsed.data.description,
       occurred_at: parsed.data.occurredAt ?? new Date().toISOString(),
       logged_by_id: user.id,
@@ -97,11 +112,27 @@ export async function logActivity(
     };
   }
 
+  if (parsed.data.nextTouchAt) {
+    const { error: updErr } = await supa
+      .from("companies")
+      .update({ next_touch_at: parsed.data.nextTouchAt })
+      .eq("id", parsed.data.companyId);
+    if (updErr) {
+      return {
+        ok: false,
+        error: {
+          code: "DB_ERROR",
+          message: `Actividad guardada, pero falló el próximo seguimiento: ${updErr.message}`,
+        },
+      };
+    }
+  }
+
   const agentLogId = await writeAgentLog({
     source: "WEB",
     toolCalled: "web:log-activity",
     actionType: "write.activity_log",
-    requestSummary: `Log ${parsed.data.type} desde web con company ${parsed.data.companyId}.`,
+    requestSummary: `Log ${parsed.data.type} desde web con company ${parsed.data.companyId}${parsed.data.outcome ? ` (outcome ${parsed.data.outcome})` : ""}${parsed.data.assetId ? " + asset" : ""}${parsed.data.nextTouchAt ? ` + next_touch ${parsed.data.nextTouchAt}` : ""}.`,
     responseSummary: `Activity ${data.id} creada.`,
     entitiesAffected: [
       { table: "activities", id: data.id },
@@ -114,6 +145,7 @@ export async function logActivity(
 
   revalidatePath("/activity");
   revalidatePath("/dashboard");
+  revalidatePath("/outreach");
   revalidatePath(`/companies/${parsed.data.companyId}`);
   if (parsed.data.projectId)
     revalidatePath(`/projects/${parsed.data.projectId}`);

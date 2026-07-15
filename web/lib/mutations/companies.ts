@@ -13,6 +13,14 @@ const STATUSES = [
   "DISQUALIFIED",
 ] as const;
 
+const PREFERRED_CHANNELS = [
+  "WHATSAPP",
+  "PHONE",
+  "EMAIL",
+  "IN_PERSON",
+  "MIXED",
+] as const;
+
 const schema = z.object({
   id: z.string().uuid(),
   status: z.enum(STATUSES),
@@ -101,4 +109,98 @@ export async function updateCompanyStatus(
     data: { id: data.id, status: data.status },
     agent_log_id: agentLogId,
   };
+}
+
+const preferredChannelSchema = z.object({
+  id: z.string().uuid(),
+  preferredChannel: z.enum(PREFERRED_CHANNELS).nullable(),
+});
+
+export async function updateCompanyPreferredChannel(
+  input: z.infer<typeof preferredChannelSchema>,
+): Promise<Envelope<{ id: string }>> {
+  const parsed = preferredChannelSchema.safeParse(input);
+  if (!parsed.success)
+    return {
+      ok: false,
+      error: { code: "INVALID_ARGS", message: parsed.error.issues[0]?.message ?? "Datos inválidos." },
+    };
+  const user = await currentUser();
+  if (!user) return { ok: false, error: { code: "NOT_AUTH", message: "No autenticado." } };
+
+  const supa = createServiceRoleClient();
+  const startedAt = Date.now();
+  const { data, error } = await supa
+    .from("companies")
+    .update({ preferred_channel: parsed.data.preferredChannel })
+    .eq("id", parsed.data.id)
+    .select("id")
+    .single();
+  const durationMs = Date.now() - startedAt;
+  if (error || !data)
+    return { ok: false, error: { code: "DB_ERROR", message: error?.message ?? "Error." } };
+
+  const agentLogId = await writeAgentLog({
+    source: "WEB",
+    toolCalled: "web:update-company-preferred-channel",
+    actionType: "write.company_preferred_channel",
+    requestSummary: `Set preferred_channel=${parsed.data.preferredChannel ?? "null"} on company ${parsed.data.id}.`,
+    responseSummary: `OK.`,
+    entitiesAffected: [{ table: "companies", id: data.id }],
+    status: "SUCCESS",
+    durationMs,
+    requestedByUserId: user.id,
+  });
+
+  revalidatePath("/companies");
+  revalidatePath(`/companies/${data.id}`);
+  revalidatePath("/outreach");
+  return { ok: true, data: { id: data.id }, agent_log_id: agentLogId };
+}
+
+const nextTouchSchema = z.object({
+  id: z.string().uuid(),
+  nextTouchAt: z.string().nullable(),
+});
+
+export async function updateCompanyNextTouch(
+  input: z.infer<typeof nextTouchSchema>,
+): Promise<Envelope<{ id: string }>> {
+  const parsed = nextTouchSchema.safeParse(input);
+  if (!parsed.success)
+    return {
+      ok: false,
+      error: { code: "INVALID_ARGS", message: parsed.error.issues[0]?.message ?? "Datos inválidos." },
+    };
+  const user = await currentUser();
+  if (!user) return { ok: false, error: { code: "NOT_AUTH", message: "No autenticado." } };
+
+  const supa = createServiceRoleClient();
+  const startedAt = Date.now();
+  const { data, error } = await supa
+    .from("companies")
+    .update({ next_touch_at: parsed.data.nextTouchAt })
+    .eq("id", parsed.data.id)
+    .select("id")
+    .single();
+  const durationMs = Date.now() - startedAt;
+  if (error || !data)
+    return { ok: false, error: { code: "DB_ERROR", message: error?.message ?? "Error." } };
+
+  const agentLogId = await writeAgentLog({
+    source: "WEB",
+    toolCalled: "web:update-company-next-touch",
+    actionType: "write.company_next_touch",
+    requestSummary: `Set next_touch_at=${parsed.data.nextTouchAt ?? "null"} on company ${parsed.data.id}.`,
+    responseSummary: `OK.`,
+    entitiesAffected: [{ table: "companies", id: data.id }],
+    status: "SUCCESS",
+    durationMs,
+    requestedByUserId: user.id,
+  });
+
+  revalidatePath("/companies");
+  revalidatePath(`/companies/${data.id}`);
+  revalidatePath("/outreach");
+  return { ok: true, data: { id: data.id }, agent_log_id: agentLogId };
 }

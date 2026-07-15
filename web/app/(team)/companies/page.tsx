@@ -6,7 +6,7 @@ import type { CompanyPhase, CompanyStatus } from "@/lib/types/companies";
 import { CompaniesFilterBar } from "@/components/pm/companies-filter-bar";
 import { CompanyStatusPill } from "@/components/pm/company-status-pill";
 import { PhaseTabs } from "@/components/pm/phase-tabs";
-import { MarkContactedButton } from "@/components/pm/mark-contacted-button";
+import { QuickTouchButton } from "@/components/pm/mark-contacted-button";
 import { t } from "@/lib/i18n/es";
 
 function waHref(num: string | null): string | null {
@@ -183,7 +183,7 @@ export default async function CompaniesPage({
                     </td>
                     {phase === "outreach" && (
                       <td className="px-4 py-3">
-                        <MarkContactedButton companyId={c.id} />
+                        <QuickTouchButton companyId={c.id} />
                       </td>
                     )}
                   </tr>

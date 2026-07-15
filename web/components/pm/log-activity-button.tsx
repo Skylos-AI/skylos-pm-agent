@@ -25,22 +25,50 @@ const CHANNELS = [
   "VIDEO_CALL",
   "OTHER",
 ] as const;
+const OUTCOMES = [
+  "NO_ANSWER",
+  "REACHED",
+  "INTERESTED",
+  "NOT_INTERESTED",
+  "CALLBACK_REQUESTED",
+  "MEETING_SCHEDULED",
+  "VOICEMAIL_LEFT",
+  "NEUTRAL",
+] as const;
+
+export type AssetOption = { id: string; name: string; version: string | null };
 
 export function LogActivityButton({
   companyId,
   contacts,
+  assets = [],
 }: {
   companyId: string;
   contacts: { id: string; full_name: string }[];
+  assets?: AssetOption[];
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<(typeof TYPES)[number]>("NOTE");
   const [channel, setChannel] = useState<(typeof CHANNELS)[number]>("OTHER");
+  const [outcome, setOutcome] = useState<string>("");
+  const [assetId, setAssetId] = useState<string>("");
+  const [nextTouch, setNextTouch] = useState<string>("");
   const [contactId, setContactId] = useState<string>("");
   const [description, setDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+
+  function reset() {
+    setDescription("");
+    setContactId("");
+    setType("NOTE");
+    setChannel("OTHER");
+    setOutcome("");
+    setAssetId("");
+    setNextTouch("");
+    setError(null);
+  }
 
   function submit() {
     setError(null);
@@ -53,6 +81,9 @@ export function LogActivityButton({
         companyId,
         type,
         channel,
+        outcome: outcome ? (outcome as (typeof OUTCOMES)[number]) : undefined,
+        assetId: assetId || null,
+        nextTouchAt: nextTouch || undefined,
         description: description.trim(),
         contactId: contactId || null,
       });
@@ -61,10 +92,7 @@ export function LogActivityButton({
         return;
       }
       setOpen(false);
-      setDescription("");
-      setContactId("");
-      setType("NOTE");
-      setChannel("OTHER");
+      reset();
       router.refresh();
     });
   }
@@ -122,6 +150,56 @@ export function LogActivityButton({
               </select>
             </label>
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block">
+              <span className="text-xs text-[var(--brand-fg-muted)] uppercase tracking-wide">
+                {t.companies.logActivityOutcome}
+              </span>
+              <select
+                value={outcome}
+                onChange={(e) => setOutcome(e.target.value)}
+                className="mt-1 w-full text-sm border border-[var(--brand-border)] rounded-md px-2 py-2 bg-white"
+              >
+                <option value="">{t.companies.logActivityOutcomeNone}</option>
+                {OUTCOMES.map((o) => (
+                  <option key={o} value={o}>
+                    {t.activityOutcome[o]}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className="text-xs text-[var(--brand-fg-muted)] uppercase tracking-wide">
+                {t.companies.logActivityNextTouch}
+              </span>
+              <input
+                type="date"
+                value={nextTouch}
+                onChange={(e) => setNextTouch(e.target.value)}
+                className="mt-1 w-full text-sm border border-[var(--brand-border)] rounded-md px-2 py-2"
+              />
+            </label>
+          </div>
+          {assets.length > 0 && (
+            <label className="block">
+              <span className="text-xs text-[var(--brand-fg-muted)] uppercase tracking-wide">
+                {t.companies.logActivityAsset}
+              </span>
+              <select
+                value={assetId}
+                onChange={(e) => setAssetId(e.target.value)}
+                className="mt-1 w-full text-sm border border-[var(--brand-border)] rounded-md px-2 py-2 bg-white"
+              >
+                <option value="">{t.companies.logActivityAssetNone}</option>
+                {assets.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                    {a.version ? ` (${a.version})` : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           {contacts.length > 0 && (
             <label className="block">
               <span className="text-xs text-[var(--brand-fg-muted)] uppercase tracking-wide">

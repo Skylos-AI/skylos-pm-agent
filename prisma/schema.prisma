@@ -85,6 +85,36 @@ enum ActivityChannel {
   OTHER
 }
 
+enum ActivityOutcome {
+  NO_ANSWER
+  REACHED
+  INTERESTED
+  NOT_INTERESTED
+  CALLBACK_REQUESTED
+  MEETING_SCHEDULED
+  VOICEMAIL_LEFT
+  NEUTRAL
+}
+
+enum PreferredChannel {
+  WHATSAPP
+  PHONE
+  EMAIL
+  IN_PERSON
+  MIXED
+}
+
+enum AssetKind {
+  PROPOSAL
+  DECK
+  ONE_PAGER
+  EMAIL_TEMPLATE
+  BROCHURE
+  CASE_STUDY
+  CONTRACT
+  OTHER
+}
+
 enum PipelineStage {
   LEAD
   QUALIFIED
@@ -156,22 +186,24 @@ model Persona {
 }
 
 model Company {
-  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name             String
-  nit              String?       @unique
-  sector           String?
-  city             String?
-  department       String?
-  source           CompanySource @default(MANUAL)
-  status           CompanyStatus @default(LEAD)
-  assignedToId     String?       @map("assigned_to_id") @db.Uuid
-  primaryPersonaId String?       @map("primary_persona_id") @db.Uuid
-  website          String?
-  tags             String[]
-  notes            String?       @db.Text
-  externalId       String?       @map("external_id")
-  createdAt        DateTime      @default(now()) @map("created_at")
-  updatedAt        DateTime      @updatedAt @map("updated_at")
+  id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name              String
+  nit               String?           @unique
+  sector            String?
+  city              String?
+  department        String?
+  source            CompanySource     @default(MANUAL)
+  status            CompanyStatus     @default(LEAD)
+  assignedToId      String?           @map("assigned_to_id") @db.Uuid
+  primaryPersonaId  String?           @map("primary_persona_id") @db.Uuid
+  website           String?
+  tags              String[]
+  notes             String?           @db.Text
+  externalId        String?           @map("external_id")
+  preferredChannel  PreferredChannel? @map("preferred_channel")
+  nextTouchAt       DateTime?         @map("next_touch_at")
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
 
   assignedTo     User?          @relation("CompanyAssignee", fields: [assignedToId], references: [id])
   primaryPersona Persona?       @relation(fields: [primaryPersonaId], references: [id])
@@ -185,6 +217,7 @@ model Company {
   @@index([assignedToId])
   @@index([sector])
   @@index([department])
+  @@index([nextTouchAt])
   @@map("companies")
 }
 
@@ -264,26 +297,49 @@ model Task {
 }
 
 model Activity {
-  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  companyId     String          @map("company_id") @db.Uuid
-  contactId     String?         @map("contact_id") @db.Uuid
-  projectId     String?         @map("project_id") @db.Uuid
+  id            String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyId     String           @map("company_id") @db.Uuid
+  contactId     String?          @map("contact_id") @db.Uuid
+  projectId     String?          @map("project_id") @db.Uuid
+  assetId       String?          @map("asset_id") @db.Uuid
   type          ActivityType
-  channel       ActivityChannel @default(OTHER)
-  description   String          @db.Text
-  occurredAt    DateTime        @default(now()) @map("occurred_at")
-  loggedById    String?         @map("logged_by_id") @db.Uuid
-  loggedByAgent Boolean         @default(false) @map("logged_by_agent")
-  createdAt     DateTime        @default(now()) @map("created_at")
+  channel       ActivityChannel  @default(OTHER)
+  outcome       ActivityOutcome?
+  description   String           @db.Text
+  occurredAt    DateTime         @default(now()) @map("occurred_at")
+  loggedById    String?          @map("logged_by_id") @db.Uuid
+  loggedByAgent Boolean          @default(false) @map("logged_by_agent")
+  createdAt     DateTime         @default(now()) @map("created_at")
 
   company  Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
   contact  Contact? @relation(fields: [contactId], references: [id])
   project  Project? @relation(fields: [projectId], references: [id])
+  asset    Asset?   @relation(fields: [assetId], references: [id])
   loggedBy User?    @relation(fields: [loggedById], references: [id])
 
   @@index([companyId, occurredAt(sort: Desc)])
   @@index([projectId])
+  @@index([assetId])
   @@map("activities")
+}
+
+model Asset {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  kind        AssetKind
+  externalUrl String?   @map("external_url")
+  version     String?
+  language    String    @default("es")
+  active      Boolean   @default(true)
+  notes       String?   @db.Text
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  activities Activity[]
+
+  @@index([kind])
+  @@index([active])
+  @@map("assets")
 }
 
 model PipelineDeal {

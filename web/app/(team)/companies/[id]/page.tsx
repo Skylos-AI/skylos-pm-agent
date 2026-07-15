@@ -2,9 +2,12 @@ import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { currentUser } from "@/lib/auth/current-user";
 import { getCompanyDetail } from "@/lib/data/companies";
+import {
+  getActiveAssetsForPicker,
+  getAssetsSharedWithCompany,
+} from "@/lib/data/assets";
 import { CompanyStatusPill } from "@/components/pm/company-status-pill";
 import { SectionCard, EmptyRow } from "@/components/pm/section-card";
-import { OutreachButton } from "@/components/pm/outreach-drawer";
 import { LogActivityButton } from "@/components/pm/log-activity-button";
 import {
   ConvertToClientButton,
@@ -29,19 +32,16 @@ export default async function CompanyDetailPage({
   const user = await currentUser();
   if (!user) redirect("/login");
   const { id } = await params;
-  const company = await getCompanyDetail(id);
+  const [company, assetOptions, sharedAssets] = await Promise.all([
+    getCompanyDetail(id),
+    getActiveAssetsForPicker(),
+    getAssetsSharedWithCompany(id),
+  ]);
   if (!company) notFound();
 
   const contactsForLog = company.contacts.map((c) => ({
     id: c.id,
     full_name: c.full_name,
-  }));
-  const contactsForOutreach = company.contacts.map((c) => ({
-    id: c.id,
-    full_name: c.full_name,
-    whatsapp: c.whatsapp,
-    email: c.email,
-    is_primary: c.is_primary,
   }));
 
   return (
@@ -85,12 +85,11 @@ export default async function CompanyDetailPage({
                 {t.companies.siteLink} ↗
               </a>
             )}
-            <OutreachButton
-              companyName={company.name}
-              contacts={contactsForOutreach}
-              persona={company.primary_persona}
+            <LogActivityButton
+              companyId={company.id}
+              contacts={contactsForLog}
+              assets={assetOptions}
             />
-            <LogActivityButton companyId={company.id} contacts={contactsForLog} />
             <AddToPipelineButton
               companyId={company.id}
               companyName={company.name}
@@ -246,6 +245,39 @@ export default async function CompanyDetailPage({
           )}
         </SectionCard>
       </div>
+
+      <SectionCard
+        title={t.companies.sectionAssetsShared}
+        count={sharedAssets.length}
+      >
+        {sharedAssets.length === 0 ? (
+          <EmptyRow>{t.companies.noAssetsShared}</EmptyRow>
+        ) : (
+          <ul className="divide-y divide-[var(--brand-border)]">
+            {sharedAssets.map((s) => (
+              <li
+                key={s.activity_id}
+                className="py-3 flex items-baseline justify-between gap-3"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">
+                    {s.asset?.name ?? "—"}
+                  </p>
+                  <p className="text-xs text-[var(--brand-fg-muted)]">
+                    {s.asset
+                      ? (t.assetKind[s.asset.kind as keyof typeof t.assetKind] ??
+                        s.asset.kind)
+                      : ""}
+                  </p>
+                </div>
+                <span className="text-xs text-[var(--brand-fg-muted)] shrink-0">
+                  {formatRelative(s.occurred_at)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </SectionCard>
 
       <SectionCard
         title={t.companies.sectionActivity}

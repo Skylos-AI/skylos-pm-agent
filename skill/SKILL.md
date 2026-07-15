@@ -1,6 +1,6 @@
 ---
 name: skylos-pm
-description: Skylos project management — 19 tools for managing tasks, projects, pipeline, companies, and daily briefings. Backed by Supabase. Responds in Spanish.
+description: Skylos project management — 21 tools for managing tasks, projects, pipeline, companies, outreach cadence, and daily briefings. Backed by Supabase. Responds in Spanish.
 metadata:
   openclaw:
     emoji: "📊"
@@ -27,9 +27,10 @@ Internal PM tools for the Skylos team backed by Supabase. Spanish, voice-friendl
 | 4 | `get-project` | read | Project status with tasks and recent activity |
 | 5 | `search-companies` | read | Search by name/NIT/sector/dept/status |
 | 6 | `get-activity-feed` | read | Recent interactions, filterable |
+| 6b | `list-assets` | read | List registered outreach assets (proposals, decks, one-pagers) with external links |
 | 7 | `create-task` | write | New task, optionally tied to a project |
 | 8 | `update-task-status` | write | Move task through TODO → IN_PROGRESS → DONE |
-| 9 | `log-activity` | write | Record a call/meeting/message |
+| 9 | `log-activity` | write | Record a call/meeting/message; optional `--outcome`, `--asset`, `--next-touch` to close the follow-up loop |
 | 10 | `update-pipeline-deal` | write | Move stage, set value, close date |
 | 11 | `create-reminder` | write | Schedule a future ping |
 | 12 | `create-pipeline-deal` | write | New deal for a company; default stage LEAD, default owner = caller |
@@ -40,6 +41,7 @@ Internal PM tools for the Skylos team backed by Supabase. Spanish, voice-friendl
 | 17 | `project-follow-up` | skylos | Progress check: pace, blockers, milestones, suggested actions |
 | 18 | `daily-standup` | skylos | Morning brief: tasks, overdue, pipeline moves, recent client activity |
 | 19 | `fill-proposal` | skylos | Fill a proposal template from `assets/proposals/` with company + persona + contact + value |
+| 20 | `plan-outreach-day` | skylos | Prioritized chase queue for today, grouped by company preferred channel |
 
 Each script accepts `--help` and emits a single JSON envelope to stdout. See `scripts/<group>/<tool>.js` for args and output shape.
 

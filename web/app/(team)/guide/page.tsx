@@ -8,48 +8,48 @@ const TEAM_CHART = `flowchart LR
   classDef phase fill:#F2F4F7,stroke:#E2E8F0,color:#1A202C
   classDef ops fill:#1A202C,stroke:#1A202C,color:#FFFFFF
 
-  Start([Importar 60 leads]):::ops --> A1
+  Start([Leads importados]):::ops --> A0
 
-  subgraph PhaseA["Fase A · Outreach"]
+  subgraph PhaseA["Fase A · Outreach (Jhonny)"]
     direction TB
-    A1["/companies · pestaña Outreach"]:::phase
-    A2["📞 Marcar contactado<br/>(Eduardo, Manu)"]:::phase
-    A3["Generar borrador de outreach<br/>(Eduardo, Manu)"]:::phase
-    A4["+ Registrar actividad<br/>(Eduardo)"]:::phase
-    A5["/pipeline · kanban<br/>(Eduardo + Jhonny en NEGOTIATION)"]:::phase
-    A1 --> A2 --> A4
-    A1 --> A3 --> A4
+    A0["/outreach · chase del día<br/>(por canal preferido)"]:::phase
+    A1["Presencial Cbb / Email / Teléfono"]:::phase
+    A2["📞 Registrar toque<br/>(canal + resultado + próximo seguimiento)"]:::phase
+    A3["+ Registrar actividad<br/>(detalle + asset compartido)"]:::phase
+    A4["+ Añadir al pipeline<br/>(cuando hay deal concreto)"]:::phase
+    A5["/pipeline · kanban"]:::phase
+    A0 --> A1 --> A2
+    A1 --> A3
+    A2 --> A4
+    A3 --> A4
     A4 --> A5
   end
 
-  A5 -->|"Deal WON"| Convert["↗ Mover a cliente activo<br/>(Jhonny aprueba)"]:::phase
+  A5 -->|"Deal WON"| Convert["↗ Mover a cliente activo"]:::phase
 
   subgraph PhaseB["Fase B · Delivery"]
     direction TB
-    B1["+ Nuevo proyecto<br/>(Claudio define alcance)"]:::phase
-    B2["/projects/[id]<br/>(Claudio ejecuta)"]:::phase
+    B1["+ Nuevo proyecto"]:::phase
+    B2["/projects/[id]"]:::phase
     B3["+ Nueva tarea<br/>TODO → IN_PROGRESS → DONE"]:::phase
     B4["/tasks · cola personal"]:::phase
-    B5["+ Registrar actividad<br/>(Claudio + Manu en seguimientos)"]:::phase
     B1 --> B2 --> B3 --> B4
-    B2 --> B5
   end
 
   Convert --> B1
 
-  E["👤 Eduardo<br/>Ventas + Outreach"]:::person
-  C["👤 Claudio<br/>Delivery + Proyectos"]:::person
-  J["👤 Jhonny<br/>Founder · supervisión"]:::person
-  M["🤖 Manu (OpenClaw)<br/>WhatsApp / Telegram / cron"]:::bot
+  AS["/assets · registro de materiales<br/>(links a Drive/Canva, uso trackeado)"]:::ops
+  AS -.-> A3
 
-  E -.-> PhaseA
-  C -.-> PhaseB
+  J["👤 Jhonny<br/>Founder · único operador del agente"]:::person
+  M["🤖 Manu (OpenClaw)<br/>Telegram / cron"]:::bot
+
   J -.-> PhaseA
   J -.-> PhaseB
-  M -.->|"crea tareas,<br/>resúmenes diarios"| PhaseA
+  M -.->|"plan-outreach-day,<br/>log-activity, standup"| PhaseA
   M -.->|"recordatorios,<br/>follow-ups"| PhaseB
 
-  PhaseA --> S["/standup<br/>(resumen diario, Manu lo manda 9am)"]:::phase
+  PhaseA --> S["/standup<br/>(resumen diario)"]:::phase
   PhaseB --> S
   S --> AL["/agent-log · auditoría<br/>(web + Manu + cron)"]:::ops
 `;
@@ -94,36 +94,140 @@ export default async function GuidePage() {
         <MermaidDiagram chart={TEAM_CHART} />
       </section>
 
+      <section className="bg-[var(--brand-surface)] border border-[var(--brand-border)] rounded-2xl p-6 shadow-sm">
+        <h2 className="font-display text-xl tracking-tight mb-1">
+          Cuándo usar cada botón
+        </h2>
+        <p className="text-sm text-[var(--brand-fg-muted)] mb-4">
+          Cada situación tiene una herramienta y deja un rastro específico.
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-xs uppercase tracking-wide text-[var(--brand-fg-muted)] border-b border-[var(--brand-border)]">
+                <th className="py-2 pr-4">Situación</th>
+                <th className="py-2 pr-4">Herramienta</th>
+                <th className="py-2">Deja rastro como</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--brand-border)] text-[var(--brand-fg-muted)]">
+              <tr>
+                <td className="py-2.5 pr-4">Fui a Cbb y me reuní con ellos</td>
+                <td className="py-2.5 pr-4">
+                  <strong>+ Registrar actividad</strong> → Reunión / En persona
+                </td>
+                <td className="py-2.5">
+                  <code className="text-[var(--brand-blue)]">MEETING / IN_PERSON</code>
+                </td>
+              </tr>
+              <tr>
+                <td className="py-2.5 pr-4">Llamé y no contestaron</td>
+                <td className="py-2.5 pr-4">
+                  <strong>📞 Registrar toque</strong> → Teléfono, No contestaron
+                </td>
+                <td className="py-2.5">
+                  <code className="text-[var(--brand-blue)]">CALL / NO_ANSWER</code>
+                </td>
+              </tr>
+              <tr>
+                <td className="py-2.5 pr-4">Llamé y hablé</td>
+                <td className="py-2.5 pr-4">
+                  <strong>📞 Registrar toque</strong> → Teléfono, el resultado que aplique
+                </td>
+                <td className="py-2.5">
+                  <code className="text-[var(--brand-blue)]">CALL / REACHED…</code>
+                </td>
+              </tr>
+              <tr>
+                <td className="py-2.5 pr-4">Mandé un email (con o sin propuesta)</td>
+                <td className="py-2.5 pr-4">
+                  <strong>+ Registrar actividad</strong> → Email, + asset si compartiste material
+                </td>
+                <td className="py-2.5">
+                  <code className="text-[var(--brand-blue)]">EMAIL + asset_id</code>
+                </td>
+              </tr>
+              <tr>
+                <td className="py-2.5 pr-4">Se armó un deal concreto</td>
+                <td className="py-2.5 pr-4">
+                  <strong>+ Añadir al pipeline</strong> desde la ficha
+                </td>
+                <td className="py-2.5">
+                  <code className="text-[var(--brand-blue)]">pipeline_deal</code>
+                </td>
+              </tr>
+              <tr>
+                <td className="py-2.5 pr-4">Prometí seguir en una fecha</td>
+                <td className="py-2.5 pr-4">
+                  Campo <strong>Próximo seguimiento</strong> al registrar el toque
+                </td>
+                <td className="py-2.5">
+                  <code className="text-[var(--brand-blue)]">next_touch_at</code> → aparece en /outreach
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card title="Presencial (Cochabamba)">
+          <ul className="text-sm text-[var(--brand-fg-muted)] space-y-2 list-disc list-inside">
+            <li>Canal preferido = <strong>Presencial</strong> en la ficha.</li>
+            <li>Cadencia sugerida: una visita cada ~10 días mientras haya interés.</li>
+            <li>Registrar la reunión el mismo día, con resultado y quién estuvo.</li>
+            <li>Si entregaste material impreso, marcá el asset en la actividad.</li>
+            <li>Siempre salir con el próximo seguimiento agendado.</li>
+          </ul>
+        </Card>
+        <Card title="Email">
+          <ul className="text-sm text-[var(--brand-fg-muted)] space-y-2 list-disc list-inside">
+            <li>Canal preferido = <strong>Email</strong>.</li>
+            <li>Cadencia sugerida: primer envío → +4 días → +10 días → pausa.</li>
+            <li>Adjuntar propuesta/one-pager = registrar el asset en la actividad.</li>
+            <li>Sin respuesta tras 3 toques: probar teléfono o marcar Descalificado.</li>
+          </ul>
+        </Card>
+        <Card title="Teléfono / WhatsApp">
+          <ul className="text-sm text-[var(--brand-fg-muted)] space-y-2 list-disc list-inside">
+            <li>Canal preferido = <strong>Teléfono</strong> o <strong>WhatsApp</strong>.</li>
+            <li>Mejor franja: media mañana (9:30–11:30).</li>
+            <li>Registrar cada intento, incluso los NO_ANSWER — el patrón importa.</li>
+            <li>Tras 3 intentos sin contacto: cambiar de canal o espaciar 2 semanas.</li>
+          </ul>
+        </Card>
+      </section>
+
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card title="Día típico — Outreach (Eduardo)">
+        <Card title="Día típico — Outreach (Jhonny)">
           <ol className="text-sm text-[var(--brand-fg-muted)] space-y-2 list-decimal list-inside">
             <li>
-              Abrir{" "}
-              <code className="text-[var(--brand-blue)]">/companies</code> en
-              la pestaña Outreach (default).
+              Abrir <code className="text-[var(--brand-blue)]">/outreach</code>{" "}
+              — el chase del día ya viene agrupado por canal.
             </li>
             <li>
-              Para cada lead que tocás, <strong>📞 Marcar contactado</strong>{" "}
-              registra un MESSAGE_SENT por WhatsApp.
+              Trabajar cada grupo: visitas de Cbb primero, luego llamadas,
+              luego emails.
             </li>
             <li>
-              Si necesitás un texto, entrar a la ficha y{" "}
-              <strong>Generar borrador de outreach</strong> (usa la persona del
-              sector).
+              Cada toque se registra con <strong>📞 Registrar toque</strong> o{" "}
+              <strong>+ Registrar actividad</strong> — siempre con resultado y
+              próximo seguimiento.
             </li>
             <li>
-              Para llamadas / reuniones / propuestas, usar{" "}
-              <strong>+ Registrar actividad</strong> con el tipo correcto.
+              Cuando hay deal concreto: <strong>+ Añadir al pipeline</strong>{" "}
+              desde la ficha y moverlo en{" "}
+              <code className="text-[var(--brand-blue)]">/pipeline</code>.
             </li>
             <li>
-              Cuando hay deal concreto, crearlo en{" "}
-              <code className="text-[var(--brand-blue)]">/pipeline</code> y
-              moverlo entre columnas a medida que avanza.
+              Desde Telegram, Manu hace lo mismo:{" "}
+              <code className="text-[var(--brand-blue)]">plan-outreach-day</code>{" "}
+              te da la cola del día.
             </li>
           </ol>
         </Card>
 
-        <Card title="Cuando ganás un deal (Jhonny + Claudio)">
+        <Card title="Cuando ganás un deal">
           <ol className="text-sm text-[var(--brand-fg-muted)] space-y-2 list-decimal list-inside">
             <li>
               En <code className="text-[var(--brand-blue)]">/pipeline</code>,
