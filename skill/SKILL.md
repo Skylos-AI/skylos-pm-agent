@@ -22,7 +22,7 @@ Internal PM tools for the Skylos team backed by Supabase. Spanish, voice-friendl
 | # | Tool | Group | One-liner |
 |---|---|---|---|
 | 1 | `get-my-tasks` | read | Open tasks for the caller with overdue flagging |
-| 2 | `get-company` | read | Full company snapshot (contacts, projects, deals, activities) |
+| 2 | `get-company` | read | Full company snapshot (contacts, projects, deals, activities, follow-up state, shared assets, cadence suggestions) |
 | 3 | `get-pipeline-status` | read | Pipeline summary by stage, in USD |
 | 4 | `get-project` | read | Project status with tasks and recent activity |
 | 5 | `search-companies` | read | Search by name/NIT/sector/dept/status |
@@ -39,10 +39,12 @@ Internal PM tools for the Skylos team backed by Supabase. Spanish, voice-friendl
 | 15 | `pipeline-intelligence` | skylos | Stuck deals (>14d), hot leads, conversion rates |
 | 16 | `client-status-brief` | skylos | Full brief on one active client |
 | 17 | `project-follow-up` | skylos | Progress check: pace, blockers, milestones, suggested actions |
-| 18 | `daily-standup` | skylos | Morning brief: tasks, overdue, pipeline moves, recent client activity |
+| 18 | `daily-standup` | skylos | Morning brief: tasks, overdue, pipeline moves, recent client activity, today's outreach chase queue |
 | 19 | `fill-proposal` | skylos | Fill a proposal template from `assets/proposals/` with company + persona + contact + value |
 | 20 | `plan-outreach-day` | skylos | Prioritized chase queue for today, grouped by company preferred channel |
 
 Each script accepts `--help` and emits a single JSON envelope to stdout. See `scripts/<group>/<tool>.js` for args and output shape.
+
+Outreach guidance: when sharing material, pick the asset whose `notes` field (via `list-assets`) matches the situation — the notes say when to use each one. Always pass `--next-touch` when logging an outreach activity so the lead stays in the chase queue. For "how is it going with lead X", `get-company` alone answers it (follow-up state + suggestions included).
 
 For dev setup, conventions, assets, install, and deploy info, see [README.md](README.md).

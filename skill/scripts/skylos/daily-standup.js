@@ -46,6 +46,7 @@ runTool({
       { data: pipelineMoves },
       { data: ownedCompanies },
       { data: remindersToday },
+      { data: outreachDue },
     ] = await Promise.all([
       supa
         .from("tasks")
@@ -75,6 +76,16 @@ runTool({
         .eq("target_user_id", target.id)
         .gte("trigger_at", startIso)
         .lte("trigger_at", endIso),
+      // Chase queue — same criteria as plan-outreach-day (campaign is solo-Jhonny,
+      // so no per-user filter)
+      supa
+        .from("companies")
+        .select("id, name, city, preferred_channel, next_touch_at")
+        .not("next_touch_at", "is", null)
+        .lte("next_touch_at", endIso)
+        .in("status", ["LEAD", "PROSPECT", "ACTIVE_CLIENT"])
+        .order("next_touch_at", { ascending: true })
+        .limit(10),
     ]);
 
     const ownedCompanyIds = (ownedCompanies ?? []).map((c) => c.id);
@@ -90,10 +101,30 @@ runTool({
       recentActivities = acts ?? [];
     }
 
+    const CHANNEL_LABEL = {
+      IN_PERSON: "presencial",
+      EMAIL: "email",
+      PHONE: "teléfono",
+      WHATSAPP: "WhatsApp",
+      MIXED: "mixto",
+    };
+    const byChannel = {};
+    for (const c of outreachDue ?? []) {
+      const label = CHANNEL_LABEL[c.preferred_channel] ?? "sin canal";
+      byChannel[label] = (byChannel[label] ?? 0) + 1;
+    }
+    const outreachLine =
+      (outreachDue?.length ?? 0) === 0
+        ? ""
+        : ` ${outreachDue.length} empresa(s) para chasear (${Object.entries(byChannel)
+            .map(([k, n]) => `${n} ${k}`)
+            .join(", ")}).`;
+
     const summary =
       `${target.full_name.split(" ")[0]}, hoy: ${dueToday?.length ?? 0} tareas, ` +
       `${overdue?.length ?? 0} vencidas, ${pipelineMoves?.length ?? 0} movimientos de pipeline, ` +
-      `${recentActivities.length} interacciones recientes.`;
+      `${recentActivities.length} interacciones recientes.` +
+      outreachLine;
 
     const flatTask = (t) => ({
       id: t.id,
@@ -135,6 +166,13 @@ runTool({
         pipeline_moves: cap(pipelineMoves ?? [], 10, flatDeal),
         recent_activities: cap(recentActivities ?? [], 10, flatActivity),
         reminders: cap(remindersToday ?? [], 10, flatReminder),
+        outreach_due: cap(outreachDue ?? [], 10, (c) => ({
+          id: c.id,
+          name: c.name,
+          city: c.city,
+          channel: c.preferred_channel,
+          next_touch_at: c.next_touch_at?.slice(0, 10) ?? null,
+        })),
       },
       summary,
       requestSummary: `Standup de ${target.email} para ${date}.`,

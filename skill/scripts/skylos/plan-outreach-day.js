@@ -2,6 +2,7 @@
 const { runTool } = require("../lib/runner");
 const { getClient } = require("../lib/supabase");
 const { appError } = require("../lib/envelope");
+const { todayIso, endOfDayUtc } = require("../lib/time");
 
 const CHANNEL_LABEL = {
   IN_PERSON: "presencial",
@@ -23,8 +24,8 @@ runTool({
       .option("limit", { type: "number", default: 20 }),
   handler: async (argv, { user }) => {
     const supa = getClient();
-    const today = argv.date ?? new Date().toISOString().slice(0, 10);
-    const endOfDay = `${today}T23:59:59.999Z`;
+    const today = argv.date ?? todayIso();
+    const endOfDay = endOfDayUtc(today).toISOString();
 
     // No notes/pitch content here — 20 queued companies × full pitch scripts
     // would blow up the response. Use get-company for the detail.
