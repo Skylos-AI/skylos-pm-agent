@@ -91,7 +91,7 @@ function LoginPageInner() {
         />
       </div>
 
-      <div className="w-full max-w-md bg-[var(--brand-surface)] border border-[var(--brand-border)] rounded-2xl p-10 shadow-sm">
+      <div className="w-full max-w-md bg-[var(--brand-surface)] border border-[var(--brand-border)] rounded-2xl p-10 [box-shadow:var(--shadow-card)]">
         <div className="flex items-center gap-3 mb-8">
           <Image
             src="/logo-skylos.svg"

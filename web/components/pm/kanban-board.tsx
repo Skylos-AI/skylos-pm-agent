@@ -362,9 +362,9 @@ function KanbanColumn({
   return (
     <div
       ref={setNodeRef}
-      className={`bg-[var(--brand-bg)] border rounded-xl p-3 flex flex-col min-h-[60vh] transition ${
+      className={`bg-[var(--brand-fg)]/[0.03] border rounded-xl p-3 flex flex-col min-h-[60vh] transition ${
         isOver
-          ? "border-[var(--brand-blue)] bg-[var(--brand-blue)]/5"
+          ? "border-[var(--brand-blue)] bg-[var(--brand-blue)]/5 ring-2 ring-[var(--brand-blue)]/20"
           : "border-[var(--brand-border)]"
       }`}
     >
@@ -373,11 +373,11 @@ function KanbanColumn({
           <h2 className="font-display text-sm tracking-tight">
             {t.stage[stage]}
           </h2>
-          <p className="text-xs text-[var(--brand-fg-muted)]">
+          <p className="text-xs text-[var(--brand-fg-muted)] tabular-nums">
             {t.pipeline.countDeals(deals.length)}
           </p>
         </div>
-        <span className="text-xs font-medium">{formatBob(total)}</span>
+        <span className="text-xs font-medium tabular-nums">{formatBob(total)}</span>
       </header>
       <div className="flex-1 space-y-2 overflow-y-auto">
         {deals.length === 0 ? (
@@ -433,7 +433,9 @@ function DealCard({
   return (
     <div
       className={`bg-white border border-[var(--brand-border)] rounded-lg p-3 text-sm transition ${
-        dragging ? "shadow-2xl rotate-1" : "shadow-sm hover:border-[var(--brand-blue)]"
+        dragging
+          ? "[box-shadow:var(--shadow-pop)] rotate-1 scale-[1.02]"
+          : "[box-shadow:var(--shadow-card)] hover:border-[var(--brand-blue)]/50 hover:[box-shadow:var(--shadow-card-hover)] hover:-translate-y-px"
       }`}
     >
       <p className="font-medium leading-snug line-clamp-2 mb-1">{deal.title}</p>

@@ -72,7 +72,7 @@ export default async function OutreachPage() {
 
 function BucketCard({ title, rows }: { title: string; rows: OutreachRow[] }) {
   return (
-    <section className="bg-[var(--brand-surface)] border border-[var(--brand-border)] rounded-2xl p-5 shadow-sm">
+    <section className="bg-[var(--brand-surface)] border border-[var(--brand-border)] rounded-2xl p-5 [box-shadow:var(--shadow-card)]">
       <header className="flex items-baseline justify-between mb-3">
         <h2 className="font-display text-lg tracking-tight">{title}</h2>
         <span className="text-xs text-[var(--brand-fg-muted)]">

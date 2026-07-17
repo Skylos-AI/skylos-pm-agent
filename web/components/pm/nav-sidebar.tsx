@@ -41,9 +41,15 @@ export function NavSidebar({
   userEmail: string;
 }) {
   const pathname = usePathname();
+  const initials = userFullName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase())
+    .join("");
   return (
-    <aside className="w-60 shrink-0 border-r border-[var(--brand-border)] bg-[var(--brand-surface)] flex flex-col">
-      <div className="px-6 pt-6 pb-8">
+    <aside className="w-60 shrink-0 border-r border-[var(--brand-border)] bg-[var(--brand-surface)]/85 backdrop-blur-sm flex flex-col sticky top-0 h-screen">
+      <div className="px-6 pt-6 pb-6">
         <Link href="/dashboard" className="block">
           <Image
             src="/logo-skylos.svg"
@@ -54,11 +60,11 @@ export function NavSidebar({
             priority
           />
         </Link>
-        <p className="mt-2 text-xs text-[var(--brand-fg-muted)] tracking-wide uppercase">
+        <p className="mt-2 text-[11px] text-[var(--brand-fg-muted)] tracking-[0.14em] uppercase">
           {t.app.tagline}
         </p>
       </div>
-      <nav className="flex-1 px-3 space-y-1">
+      <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto pb-4">
         {nav.map((item) => {
           const active =
             pathname === item.href || pathname.startsWith(item.href + "/");
@@ -66,27 +72,50 @@ export function NavSidebar({
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition ${
+              className={`group relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors duration-150 ${
                 active
-                  ? "text-white shadow-md brand-gradient"
-                  : "text-[var(--brand-fg-muted)] hover:bg-[var(--brand-bg)] hover:text-[var(--brand-fg)]"
+                  ? "bg-[var(--brand-blue)]/[0.08] text-[var(--brand-blue)] font-medium"
+                  : "text-[var(--brand-fg-muted)] hover:bg-[var(--brand-fg)]/[0.04] hover:text-[var(--brand-fg)]"
               }`}
             >
-              <item.icon size={16} />
+              {active && (
+                <span
+                  className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-full brand-gradient"
+                  aria-hidden
+                />
+              )}
+              <item.icon
+                size={16}
+                className={
+                  active
+                    ? ""
+                    : "text-[var(--brand-fg-muted)]/70 group-hover:text-[var(--brand-fg-muted)] transition-colors duration-150"
+                }
+              />
               {item.label}
             </Link>
           );
         })}
       </nav>
       <div className="border-t border-[var(--brand-border)] px-4 py-4">
-        <div className="text-sm font-medium truncate">{userFullName}</div>
-        <div className="text-xs text-[var(--brand-fg-muted)] truncate">
-          {userEmail}
+        <div className="flex items-center gap-3 min-w-0">
+          <span
+            className="brand-gradient text-white text-xs font-semibold h-8 w-8 rounded-full flex items-center justify-center shrink-0 shadow-sm"
+            aria-hidden
+          >
+            {initials}
+          </span>
+          <div className="min-w-0">
+            <div className="text-sm font-medium truncate">{userFullName}</div>
+            <div className="text-xs text-[var(--brand-fg-muted)] truncate">
+              {userEmail}
+            </div>
+          </div>
         </div>
         <form action="/auth/sign-out" method="post" className="mt-3">
           <button
             type="submit"
-            className="flex items-center gap-2 text-xs text-[var(--brand-fg-muted)] hover:text-[var(--brand-fg)]"
+            className="flex items-center gap-2 text-xs text-[var(--brand-fg-muted)] hover:text-[var(--brand-fg)] transition-colors"
           >
             <LogOut size={14} />
             {t.nav.signOut}

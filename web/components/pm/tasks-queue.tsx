@@ -189,7 +189,7 @@ export function TasksQueue({
           e.preventDefault();
           createInline();
         }}
-        className="bg-[var(--brand-surface)] border border-[var(--brand-border)] rounded-2xl p-4 shadow-sm flex flex-wrap items-center gap-3"
+        className="bg-[var(--brand-surface)] border border-[var(--brand-border)] rounded-2xl p-4 [box-shadow:var(--shadow-card)] flex flex-wrap items-center gap-3"
       >
         <input
           value={newTitle}
@@ -282,7 +282,7 @@ export function TasksQueue({
         </div>
       )}
 
-      <div className="bg-[var(--brand-surface)] border border-[var(--brand-border)] rounded-2xl overflow-hidden shadow-sm">
+      <div className="bg-[var(--brand-surface)] border border-[var(--brand-border)] rounded-2xl overflow-hidden [box-shadow:var(--shadow-card)]">
         {filtered.length === 0 ? (
           <p className="p-8 text-sm text-[var(--brand-fg-muted)] text-center">
             {t.tasks.empty}

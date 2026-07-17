@@ -1,44 +1,33 @@
 import { t } from "@/lib/i18n/es";
 import type { Pace } from "@/lib/types/projects";
+import { Pill, type PillTone } from "@/components/pm/pill";
 
 export function StatusPill({
   status,
 }: {
   status: "PLANNING" | "ACTIVE" | "ON_HOLD" | "COMPLETED" | "CANCELLED";
 }) {
-  const color =
+  const tone: PillTone =
     status === "ACTIVE"
-      ? "bg-[var(--brand-blue)]/10 text-[var(--brand-blue)]"
+      ? "blue"
       : status === "COMPLETED"
-        ? "bg-[var(--brand-cyan)]/10 text-[var(--brand-cyan)]"
+        ? "cyan"
         : status === "CANCELLED"
-          ? "bg-[var(--brand-magenta)]/10 text-[var(--brand-magenta)]"
-          : "bg-[var(--brand-fg-muted)]/10 text-[var(--brand-fg-muted)]";
-  return (
-    <span
-      className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${color}`}
-    >
-      {t.projectStatus[status]}
-    </span>
-  );
+          ? "magenta"
+          : "neutral";
+  return <Pill tone={tone}>{t.projectStatus[status]}</Pill>;
 }
 
 export function PaceBadge({ pace }: { pace: Pace }) {
-  const color =
+  const tone: PillTone =
     pace === "on_track"
-      ? "bg-[var(--brand-blue)]/10 text-[var(--brand-blue)]"
+      ? "blue"
       : pace === "ahead"
-        ? "bg-[var(--brand-cyan)]/10 text-[var(--brand-cyan)]"
+        ? "cyan"
         : pace === "behind"
-          ? "bg-[var(--brand-magenta)]/10 text-[var(--brand-magenta)]"
-          : "bg-[var(--brand-fg-muted)]/10 text-[var(--brand-fg-muted)]";
-  return (
-    <span
-      className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${color}`}
-    >
-      {t.pace[pace]}
-    </span>
-  );
+          ? "magenta"
+          : "neutral";
+  return <Pill tone={tone}>{t.pace[pace]}</Pill>;
 }
 
 export function TaskStatusPill({
@@ -46,19 +35,13 @@ export function TaskStatusPill({
 }: {
   status: "TODO" | "IN_PROGRESS" | "BLOCKED" | "DONE";
 }) {
-  const color =
+  const tone: PillTone =
     status === "DONE"
-      ? "bg-[var(--brand-cyan)]/10 text-[var(--brand-cyan)]"
+      ? "cyan"
       : status === "BLOCKED"
-        ? "bg-[var(--brand-magenta)]/10 text-[var(--brand-magenta)]"
+        ? "magenta"
         : status === "IN_PROGRESS"
-          ? "bg-[var(--brand-blue)]/10 text-[var(--brand-blue)]"
-          : "bg-[var(--brand-fg-muted)]/10 text-[var(--brand-fg-muted)]";
-  return (
-    <span
-      className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${color}`}
-    >
-      {t.status[status]}
-    </span>
-  );
+          ? "blue"
+          : "neutral";
+  return <Pill tone={tone}>{t.status[status]}</Pill>;
 }

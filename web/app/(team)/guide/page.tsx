@@ -87,14 +87,14 @@ export default async function GuidePage() {
         </p>
       </header>
 
-      <section className="bg-[var(--brand-surface)] border border-[var(--brand-border)] rounded-2xl p-6 shadow-sm">
+      <section className="bg-[var(--brand-surface)] border border-[var(--brand-border)] rounded-2xl p-6 [box-shadow:var(--shadow-card)]">
         <h2 className="font-display text-xl tracking-tight mb-4">
           El flujo + quién hace qué
         </h2>
         <MermaidDiagram chart={TEAM_CHART} />
       </section>
 
-      <section className="bg-[var(--brand-surface)] border border-[var(--brand-border)] rounded-2xl p-6 shadow-sm">
+      <section className="bg-[var(--brand-surface)] border border-[var(--brand-border)] rounded-2xl p-6 [box-shadow:var(--shadow-card)]">
         <h2 className="font-display text-xl tracking-tight mb-1">
           Cuándo usar cada botón
         </h2>
@@ -305,7 +305,7 @@ export default async function GuidePage() {
         </p>
       </section>
 
-      <section className="bg-[var(--brand-surface)] border border-[var(--brand-border)] rounded-2xl p-6 shadow-sm">
+      <section className="bg-[var(--brand-surface)] border border-[var(--brand-border)] rounded-2xl p-6 [box-shadow:var(--shadow-card)]">
         <div className="mb-4">
           <p className="text-xs uppercase tracking-wide text-[var(--brand-fg-muted)] mb-1">
             Objetivo final
@@ -377,7 +377,7 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-[var(--brand-surface)] border border-[var(--brand-border)] rounded-2xl p-5 shadow-sm hover:shadow-md transition">
+    <div className="bg-[var(--brand-surface)] border border-[var(--brand-border)] rounded-2xl p-5 [box-shadow:var(--shadow-card)] hover:[box-shadow:var(--shadow-card-hover)] transition duration-200">
       <h2 className="font-display text-lg tracking-tight mb-3">{title}</h2>
       {children}
     </div>
