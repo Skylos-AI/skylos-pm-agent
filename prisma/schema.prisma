@@ -144,6 +144,18 @@ enum ReminderStatus {
   FAILED
 }
 
+enum MessageChannel {
+  WHATSAPP
+  EMAIL
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SENT
+}
+
 // ===== CORE TABLES =====
 
 model User {
@@ -165,6 +177,7 @@ model User {
   ownedPipeline     PipelineDeal[]
   agentRequests     AgentLog[]     @relation("AgentRequester")
   reminders         Reminder[]
+  reviewedApprovals PendingApproval[]
 
   @@map("users")
 }
@@ -202,22 +215,31 @@ model Company {
   externalId        String?           @map("external_id")
   preferredChannel  PreferredChannel? @map("preferred_channel")
   nextTouchAt       DateTime?         @map("next_touch_at")
+  // WA outreach automation (wa-outreach-v1.txt). nextTouchAt above is the
+  // human chase queue; nextAction/nextActionAt drive the automated sequence.
+  nextAction        String?           @map("next_action")
+  nextActionAt      DateTime?         @map("next_action_at")
+  sequencePosition  Int               @default(0) @map("sequence_position")
+  waJid             String?           @unique @map("wa_jid")
   createdAt         DateTime          @default(now()) @map("created_at")
   updatedAt         DateTime          @updatedAt @map("updated_at")
 
-  assignedTo     User?          @relation("CompanyAssignee", fields: [assignedToId], references: [id])
-  primaryPersona Persona?       @relation(fields: [primaryPersonaId], references: [id])
-  contacts       Contact[]
-  projects       Project[]
-  activities     Activity[]
-  pipelineDeals  PipelineDeal[]
-  reminders      Reminder[]
+  assignedTo       User?             @relation("CompanyAssignee", fields: [assignedToId], references: [id])
+  primaryPersona   Persona?          @relation(fields: [primaryPersonaId], references: [id])
+  contacts         Contact[]
+  projects         Project[]
+  activities       Activity[]
+  pipelineDeals    PipelineDeal[]
+  reminders        Reminder[]
+  pendingApprovals PendingApproval[]
+  waSends          WaSend[]
 
   @@index([status])
   @@index([assignedToId])
   @@index([sector])
   @@index([department])
   @@index([nextTouchAt])
+  @@index([nextActionAt])
   @@map("companies")
 }
 
@@ -411,4 +433,82 @@ model Reminder {
   @@index([triggerAt, status])
   @@index([targetUserId])
   @@map("reminders")
+}
+
+// ===== WA OUTREACH TABLES (spec: ../wa-outreach-v1.txt) =====
+
+model MessageTemplate {
+  id                String         @id // slug, e.g. "wa_touch1_construccion"
+  channel           MessageChannel
+  stageTrigger      CompanyStatus  @map("stage_trigger")
+  vertical          String? // matches companies.sector, null = any
+  body              String         @db.Text // supports {{variable}} interpolation
+  variablesRequired String[]       @map("variables_required")
+  sendDelayHours    Int            @default(0) @map("send_delay_hours")
+  sendWindow        Json?          @map("send_window") // {days:[1-7], start:"HH:MM", end:"HH:MM"} America/La_Paz
+  nextTemplateId    String?        @map("next_template_id") // sequence chain, null = sequence ends
+  active            Boolean        @default(true)
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+
+  nextTemplate     MessageTemplate?  @relation("TemplateChain", fields: [nextTemplateId], references: [id])
+  prevTemplates    MessageTemplate[] @relation("TemplateChain")
+  pendingApprovals PendingApproval[]
+  waSends          WaSend[]
+
+  @@index([stageTrigger, active])
+  @@map("message_templates")
+}
+
+model PendingApproval {
+  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyId    String         @map("company_id") @db.Uuid
+  templateId   String         @map("template_id")
+  renderedBody String         @map("rendered_body") @db.Text // frozen at creation; may go stale
+  status       ApprovalStatus @default(PENDING)
+  reviewedById String?        @map("reviewed_by_id") @db.Uuid
+  reviewedAt   DateTime?      @map("reviewed_at")
+  createdAt    DateTime       @default(now()) @map("created_at")
+
+  company    Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  template   MessageTemplate @relation(fields: [templateId], references: [id])
+  reviewedBy User?           @relation(fields: [reviewedById], references: [id])
+
+  @@index([status])
+  @@map("pending_approvals")
+}
+
+model WaSend {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyId   String   @map("company_id") @db.Uuid
+  templateId  String   @map("template_id")
+  waMessageId String   @map("wa_message_id")
+  sentAt      DateTime @default(now()) @map("sent_at")
+
+  company  Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  template MessageTemplate @relation(fields: [templateId], references: [id])
+
+  // Insurance against double-sends: one send per template per company, ever.
+  @@unique([companyId, templateId])
+  @@map("wa_sends")
+}
+
+model WaInbound {
+  waMessageId String   @id @map("wa_message_id") // dedupe key — record-inbound is idempotent on it
+  jid         String
+  companyId   String?  @map("company_id") @db.Uuid // null = unknown sender, logged and ignored
+  text        String?  @db.Text
+  receivedAt  DateTime @map("received_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([jid])
+  @@map("wa_inbound")
+}
+
+model AppSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("app_settings")
 }

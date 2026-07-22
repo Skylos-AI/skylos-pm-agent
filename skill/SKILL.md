@@ -1,6 +1,6 @@
 ---
 name: skylos-pm
-description: Skylos project management — 21 tools for managing tasks, projects, pipeline, companies, outreach cadence, and daily briefings. Backed by Supabase. Responds in Spanish.
+description: Skylos project management — 30 tools for managing tasks, projects, pipeline, companies, outreach cadence, WA outreach automation, and daily briefings. Backed by Supabase. Responds in Spanish.
 metadata:
   openclaw:
     emoji: "📊"
@@ -42,6 +42,15 @@ Internal PM tools for the Skylos team backed by Supabase. Spanish, voice-friendl
 | 18 | `daily-standup` | skylos | Morning brief: tasks, overdue, pipeline moves, recent client activity, today's outreach chase queue |
 | 19 | `fill-proposal` | skylos | Fill a proposal template from `assets/proposals/` with company + persona + contact + value |
 | 20 | `plan-outreach-day` | skylos | Prioritized chase queue for today, grouped by company preferred channel |
+| 21 | `get-template` | outreach | Fetch one message template by slug |
+| 22 | `list-due-actions` | outreach | Companies with `next_action_at <= now` (empty when kill switch off) |
+| 23 | `record-send` | outreach | Log a confirmed WA send; advances sequence state atomically (idempotent) |
+| 24 | `record-inbound` | outreach | Log an inbound WA message; kills sequence on reply, LEAD → PROSPECT (idempotent) |
+| 25 | `create-pending-approval` | outreach | Park a first-touch message for human approval |
+| 26 | `list-pending-approvals` | outreach | Approvals by status (PENDING / APPROVED / REJECTED / SENT) |
+| 27 | `mark-approval` | outreach | approved/rejected need `--as-user`; sent is set by the runner |
+| 28 | `set-next-action` | outreach | Manual scheduling, error flagging (`error_*`), or clear (`none`) |
+| 29 | `set-outreach-enabled` | outreach | Global kill switch (`--as-user` required) |
 
 Each script accepts `--help` and emits a single JSON envelope to stdout. See `scripts/<group>/<tool>.js` for args and output shape.
 
