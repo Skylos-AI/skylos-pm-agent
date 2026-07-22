@@ -1,6 +1,6 @@
 ---
 name: skylos-pm
-description: Skylos project management — 30 tools for managing tasks, projects, pipeline, companies, outreach cadence, WA outreach automation, and daily briefings. Backed by Supabase. Responds in Spanish.
+description: Skylos project management — 31 tools for managing tasks, projects, pipeline, companies, outreach cadence, WA outreach automation, and daily briefings. Backed by Supabase. Responds in Spanish.
 metadata:
   openclaw:
     emoji: "📊"
@@ -51,8 +51,11 @@ Internal PM tools for the Skylos team backed by Supabase. Spanish, voice-friendl
 | 27 | `mark-approval` | outreach | approved/rejected need `--as-user`; sent is set by the runner |
 | 28 | `set-next-action` | outreach | Manual scheduling, error flagging (`error_*`), or clear (`none`) |
 | 29 | `set-outreach-enabled` | outreach | Global kill switch (`--as-user` required) |
+| 30 | `run-cycle` | outreach | The 15-min outreach cycle (cron): inbound pull → approved sends → due sends. Supports `--dry-run` |
 
 Each script accepts `--help` and emits a single JSON envelope to stdout. See `scripts/<group>/<tool>.js` for args and output shape.
+
+WA automation: schedule `node scripts/outreach/run-cycle.js` every 15 min via the `cron` skill. It needs `WA_BAILEYS_URL` (default `http://127.0.0.1:3131`) pointing at the wa-baileys-mcp service (see `../wa-baileys-mcp/README.md`). Sends stay off until someone runs `set-outreach-enabled --enabled true --as-user <email>`. Use `run-cycle --dry-run` to preview a cycle without side effects.
 
 Outreach guidance: when sharing material, pick the asset whose `notes` field (via `list-assets`) matches the situation — the notes say when to use each one. Always pass `--next-touch` when logging an outreach activity so the lead stays in the chase queue. For "how is it going with lead X", `get-company` alone answers it (follow-up state + suggestions included).
 
