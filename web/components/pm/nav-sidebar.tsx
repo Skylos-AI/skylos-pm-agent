@@ -16,6 +16,7 @@ import {
   LogOut,
   Target,
   Package,
+  MessageCircle,
 } from "lucide-react";
 import { t } from "@/lib/i18n/es";
 
@@ -25,6 +26,7 @@ const nav = [
   { href: "/projects", label: t.nav.projects, icon: FolderKanban },
   { href: "/companies", label: t.nav.companies, icon: Building2 },
   { href: "/outreach", label: "Outreach", icon: Target },
+  { href: "/wa", label: "WA Auto", icon: MessageCircle },
   { href: "/assets", label: "Assets", icon: Package },
   { href: "/tasks", label: t.nav.tasks, icon: ListTodo },
   { href: "/activity", label: t.nav.activity, icon: Activity },
