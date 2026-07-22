@@ -1,0 +1,18 @@
+[Unit]
+Description=wa-baileys-mcp - WhatsApp Baileys service (Skylos outreach)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/skylos-pm-agent/wa-baileys-mcp
+ExecStart=/usr/bin/node dist/index.js
+Restart=always
+RestartSec=5
+Environment=PORT=3131
+Environment=NODE_ENV=production
+# Run as the same non-root user openclaw uses; adjust if different.
+User=openclaw
+
+[Install]
+WantedBy=multi-user.target
