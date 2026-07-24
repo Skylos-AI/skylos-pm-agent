@@ -10,6 +10,7 @@
     "prisma:seed": "prisma db seed",
     "import:base-unificada": "ts-node scripts/import-base-unificada.ts",
     "import:outreach": "ts-node scripts/import-outreach-leads.ts",
+    "import:lp": "ts-node scripts/import-lp-prospects.ts",
     "wipe": "ts-node scripts/wipe-data.ts",
     "validate": "ts-node scripts/validate-schema.ts"
   },
