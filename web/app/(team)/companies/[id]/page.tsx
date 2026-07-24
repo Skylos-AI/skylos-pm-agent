@@ -7,6 +7,7 @@ import {
   getAssetsSharedWithCompany,
 } from "@/lib/data/assets";
 import { CompanyStatusPill } from "@/components/pm/company-status-pill";
+import { CompanyTagsEditor } from "@/components/pm/company-tags-editor";
 import { SectionCard, EmptyRow } from "@/components/pm/section-card";
 import { LogActivityButton } from "@/components/pm/log-activity-button";
 import {
@@ -111,6 +112,10 @@ export default async function CompanyDetailPage({
           </p>
         )}
       </header>
+
+      <SectionCard title="Etiquetas">
+        <CompanyTagsEditor companyId={company.id} initialTags={company.tags} />
+      </SectionCard>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <SectionCard
