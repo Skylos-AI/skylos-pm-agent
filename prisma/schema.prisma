@@ -237,6 +237,7 @@ model Company {
   @@index([status])
   @@index([assignedToId])
   @@index([sector])
+  @@index([city])
   @@index([department])
   @@index([nextTouchAt])
   @@index([nextActionAt])

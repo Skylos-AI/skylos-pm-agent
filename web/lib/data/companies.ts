@@ -17,6 +17,7 @@ export type CompanyFilters = {
   phase?: CompanyPhase;
   sector?: string;
   department?: string;
+  city?: string;
   assignedToId?: string;
 };
 
@@ -27,6 +28,7 @@ export async function getCompaniesList(
   owners: { id: string; full_name: string }[];
   sectors: string[];
   departments: string[];
+  cities: string[];
 }> {
   const supa = createServiceRoleClient();
   let q = supa
@@ -43,23 +45,30 @@ export async function getCompaniesList(
   }
   if (filters?.sector) q = q.eq("sector", filters.sector);
   if (filters?.department) q = q.eq("department", filters.department);
+  if (filters?.city) q = q.eq("city", filters.city);
   if (filters?.assignedToId) q = q.eq("assigned_to_id", filters.assignedToId);
   if (filters?.q && filters.q.trim()) {
     const term = filters.q.trim().replace(/[%_]/g, "\\$&");
     q = q.or(`name.ilike.%${term}%,nit.ilike.%${term}%`);
   }
 
-  const [{ data: rows }, { data: owners }, { data: sectorRows }, { data: deptRows }] =
-    await Promise.all([
-      q,
-      supa
-        .from("users")
-        .select("id, full_name")
-        .eq("is_active", true)
-        .order("full_name", { ascending: true }),
-      supa.from("companies").select("sector").not("sector", "is", null),
-      supa.from("companies").select("department").not("department", "is", null),
-    ]);
+  const [
+    { data: rows },
+    { data: owners },
+    { data: sectorRows },
+    { data: deptRows },
+    { data: cityRows },
+  ] = await Promise.all([
+    q,
+    supa
+      .from("users")
+      .select("id, full_name")
+      .eq("is_active", true)
+      .order("full_name", { ascending: true }),
+    supa.from("companies").select("sector").not("sector", "is", null),
+    supa.from("companies").select("department").not("department", "is", null),
+    supa.from("companies").select("city").not("city", "is", null),
+  ]);
 
   const sectors = Array.from(
     new Set((sectorRows ?? []).map((r) => r.sector as string).filter(Boolean)),
@@ -68,6 +77,9 @@ export async function getCompaniesList(
     new Set(
       (deptRows ?? []).map((r) => r.department as string).filter(Boolean),
     ),
+  ).sort();
+  const cities = Array.from(
+    new Set((cityRows ?? []).map((r) => r.city as string).filter(Boolean)),
   ).sort();
 
   type RawCompany = Omit<CompanyListRow, "primary_contact"> & {
@@ -101,6 +113,7 @@ export async function getCompaniesList(
     owners: (owners ?? []) as { id: string; full_name: string }[],
     sectors,
     departments,
+    cities,
   };
 }
 

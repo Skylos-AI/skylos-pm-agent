@@ -24,6 +24,7 @@ export default async function CompaniesPage({
     phase?: string;
     sector?: string;
     department?: string;
+    city?: string;
     owner?: string;
   }>;
 }) {
@@ -42,6 +43,7 @@ export default async function CompaniesPage({
       phase,
       sector: sp.sector,
       department: sp.department,
+      city: sp.city,
       assignedToId: sp.owner,
     }),
     getCompaniesList({ phase: "todos" }),
@@ -56,7 +58,7 @@ export default async function CompaniesPage({
     todos: allForCounts.companies.length,
   };
 
-  const { companies, owners, sectors, departments } = active;
+  const { companies, owners, sectors, departments, cities } = active;
 
   return (
     <div className="min-h-screen p-8 lg:p-10">
@@ -75,6 +77,7 @@ export default async function CompaniesPage({
         owners={owners}
         sectors={sectors}
         departments={departments}
+        cities={cities}
       />
 
       <div className="bg-[var(--brand-surface)] border border-[var(--brand-border)] rounded-xl overflow-hidden">

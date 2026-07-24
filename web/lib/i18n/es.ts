@@ -265,6 +265,7 @@ export const t = {
     filterStatus: "Estado",
     filterSector: "Sector",
     filterDepartment: "Departamento",
+    filterCity: "Ciudad",
     filterOwner: "Dueño",
     columnName: "Empresa",
     columnNit: "NIT",

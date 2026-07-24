@@ -16,16 +16,19 @@ export function CompaniesFilterBar({
   owners,
   sectors,
   departments,
+  cities,
 }: {
   owners: { id: string; full_name: string }[];
   sectors: string[];
   departments: string[];
+  cities: string[];
 }) {
   const router = useRouter();
   const sp = useSearchParams();
   const status = sp.get("status") ?? "";
   const sector = sp.get("sector") ?? "";
   const department = sp.get("department") ?? "";
+  const city = sp.get("city") ?? "";
   const owner = sp.get("owner") ?? "";
   const [q, setQ] = useState(sp.get("q") ?? "");
 
@@ -100,6 +103,21 @@ export function CompaniesFilterBar({
           {departments.map((d) => (
             <option key={d} value={d}>
               {d}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="flex flex-col text-xs gap-1 text-[var(--brand-fg-muted)] uppercase tracking-wide">
+        {t.companies.filterCity}
+        <select
+          value={city}
+          onChange={(e) => update("city", e.target.value)}
+          className="text-sm border border-[var(--brand-border)] rounded-md px-2 py-1.5 bg-white min-w-[140px]"
+        >
+          <option value="">{t.pipeline.filterAll}</option>
+          {cities.map((c) => (
+            <option key={c} value={c}>
+              {c}
             </option>
           ))}
         </select>
