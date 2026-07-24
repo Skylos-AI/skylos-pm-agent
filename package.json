@@ -12,6 +12,7 @@
     "import:outreach": "ts-node scripts/import-outreach-leads.ts",
     "import:lp": "ts-node scripts/import-lp-prospects.ts",
     "import:lp-30m": "ts-node scripts/import-lp-30m.ts",
+    "import:lp-28d": "ts-node scripts/import-lp-28d.ts",
     "wipe": "ts-node scripts/wipe-data.ts",
     "validate": "ts-node scripts/validate-schema.ts"
   },

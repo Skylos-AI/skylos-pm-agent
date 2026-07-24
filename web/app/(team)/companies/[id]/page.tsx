@@ -67,8 +67,8 @@ export default async function CompanyDetailPage({
             </p>
             <p className="text-xs text-[var(--brand-fg-muted)] mt-1">
               {company.assigned_to
-                ? `Dueño: ${company.assigned_to.full_name}`
-                : "Sin dueño asignado"}
+                ? `Encargado: ${company.assigned_to.full_name}`
+                : "Sin encargado asignado"}
               {company.primary_persona
                 ? ` · Persona: ${company.primary_persona.name}`
                 : ""}
