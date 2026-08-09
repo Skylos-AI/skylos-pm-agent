@@ -17,6 +17,7 @@ import {
   Target,
   Package,
   MessageCircle,
+  MessagesSquare,
 } from "lucide-react";
 import { t } from "@/lib/i18n/es";
 
@@ -29,6 +30,7 @@ const nav = [
   { href: "/wa", label: "WA Auto", icon: MessageCircle },
   { href: "/assets", label: "Assets", icon: Package },
   { href: "/tasks", label: t.nav.tasks, icon: ListTodo },
+  { href: "/chat", label: t.nav.chat, icon: MessagesSquare },
   { href: "/activity", label: t.nav.activity, icon: Activity },
   { href: "/standup", label: t.nav.standup, icon: Sun },
   { href: "/agent-log", label: t.nav.agentLog, icon: ScrollText },

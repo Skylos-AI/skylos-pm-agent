@@ -156,6 +156,11 @@ enum ApprovalStatus {
   SENT
 }
 
+enum ChatChannelKind {
+  DIRECT
+  GROUP
+}
+
 // ===== CORE TABLES =====
 
 model User {
@@ -179,6 +184,9 @@ model User {
   reminders         Reminder[]
   reviewedApprovals PendingApproval[]
   taskNotes         TaskNote[]
+  chatChannels      ChatChannel[]        @relation("ChatChannelCreator")
+  chatMemberships   ChatChannelMember[]
+  chatMessages      ChatMessage[]
 
   @@map("users")
 }
@@ -529,4 +537,53 @@ model AppSetting {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("app_settings")
+}
+
+// ===== TEAM CHAT =====
+
+model ChatChannel {
+  id          String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String?
+  kind        ChatChannelKind
+  createdById String          @map("created_by_id") @db.Uuid
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  createdBy User                @relation("ChatChannelCreator", fields: [createdById], references: [id])
+  members   ChatChannelMember[]
+  messages  ChatMessage[]
+
+  @@index([kind])
+  @@index([updatedAt(sort: Desc)])
+  @@map("chat_channels")
+}
+
+model ChatChannelMember {
+  channelId  String    @map("channel_id") @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  lastReadAt DateTime? @map("last_read_at")
+  joinedAt   DateTime  @default(now()) @map("joined_at")
+
+  channel ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([channelId, userId])
+  @@index([userId])
+  @@map("chat_channel_members")
+}
+
+model ChatMessage {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  channelId String    @map("channel_id") @db.Uuid
+  authorId  String    @map("author_id") @db.Uuid
+  body      String    @db.Text
+  createdAt DateTime  @default(now()) @map("created_at")
+  editedAt  DateTime? @map("edited_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  channel ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  author  User        @relation(fields: [authorId], references: [id])
+
+  @@index([channelId, createdAt(sort: Desc)])
+  @@map("chat_messages")
 }

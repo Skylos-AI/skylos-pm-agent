@@ -9,6 +9,7 @@ export const t = {
     projects: "Proyectos",
     companies: "Empresas",
     tasks: "Tareas",
+    chat: "Chat",
     activity: "Actividad",
     standup: "Standup",
     agentLog: "Registro del agente",
