@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { signInWithPassword, type LoginResult } from "./actions";
@@ -41,23 +41,21 @@ function LoginPageInner() {
     | { status: "sending" }
     | { status: "error"; result: LoginResult }
     | { status: "notice"; message: string }
-  >({ status: "idle" });
-
-  useEffect(() => {
+  >(() => {
     if (urlError) {
       const message =
         ERROR_MESSAGES[urlError] ??
         `Error: ${urlError}${urlDetail ? ` (${urlDetail})` : ""}`;
-      setState({
+      return {
         status: "error",
         result: { ok: false, code: "SIGN_IN_FAILED", message },
-      });
-      return;
+      };
     }
     if (urlNotice && SUCCESS_MESSAGES[urlNotice]) {
-      setState({ status: "notice", message: SUCCESS_MESSAGES[urlNotice] });
+      return { status: "notice", message: SUCCESS_MESSAGES[urlNotice] };
     }
-  }, [urlError, urlDetail, urlNotice]);
+    return { status: "idle" };
+  });
 
   async function onSubmit(form: FormData) {
     setState({ status: "sending" });

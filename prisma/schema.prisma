@@ -178,6 +178,7 @@ model User {
   agentRequests     AgentLog[]     @relation("AgentRequester")
   reminders         Reminder[]
   reviewedApprovals PendingApproval[]
+  taskNotes         TaskNote[]
 
   @@map("users")
 }
@@ -312,11 +313,27 @@ model Task {
   assignee  User       @relation("TaskAssignee", fields: [assigneeId], references: [id])
   createdBy User?      @relation("TaskCreator", fields: [createdById], references: [id])
   reminders Reminder[]
+  notes     TaskNote[]
 
   @@index([assigneeId, status])
   @@index([dueDate])
   @@index([projectId])
   @@map("tasks")
+}
+
+model TaskNote {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  taskId       String   @map("task_id") @db.Uuid
+  authorId     String?  @map("author_id") @db.Uuid
+  authorAgent  Boolean  @default(false) @map("author_agent")
+  body         String   @db.Text
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  task   Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author User? @relation(fields: [authorId], references: [id])
+
+  @@index([taskId, createdAt(sort: Desc)])
+  @@map("task_notes")
 }
 
 model Activity {

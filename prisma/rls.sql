@@ -15,7 +15,7 @@ begin
     where table_schema = 'public'
       and table_name in (
         'users','personas','companies','contacts','projects',
-        'tasks','activities','pipeline_deals','agent_log','reminders'
+        'tasks','task_notes','activities','pipeline_deals','agent_log','reminders'
       )
   loop
     execute format('alter table %I enable row level security;', t);

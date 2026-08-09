@@ -4,6 +4,7 @@ import { currentUser } from "@/lib/auth/current-user";
 import { getCompaniesList } from "@/lib/data/companies";
 import type { CompanyPhase, CompanyStatus } from "@/lib/types/companies";
 import { CompaniesFilterBar } from "@/components/pm/companies-filter-bar";
+import { AddLeadDialog } from "@/components/pm/add-lead-dialog";
 import { CompanyStatusPill } from "@/components/pm/company-status-pill";
 import { PhaseTabs } from "@/components/pm/phase-tabs";
 import { QuickTouchButton } from "@/components/pm/mark-contacted-button";
@@ -62,13 +63,16 @@ export default async function CompaniesPage({
 
   return (
     <div className="min-h-screen p-8 lg:p-10">
-      <header className="mb-6 flex items-end justify-between">
+      <header className="mb-6 flex items-end justify-between gap-4">
         <h1 className="font-display text-5xl tracking-tight leading-tight">
           {t.companies.title}
         </h1>
-        <span className="text-xs text-[var(--brand-fg-muted)]">
-          {companies.length} {companies.length === 1 ? "empresa" : "empresas"}
-        </span>
+        <div className="flex items-end gap-4">
+          <span className="text-xs text-[var(--brand-fg-muted)]">
+            {companies.length} {companies.length === 1 ? "empresa" : "empresas"}
+          </span>
+          <AddLeadDialog cities={cities} />
+        </div>
       </header>
 
       <PhaseTabs counts={counts} />

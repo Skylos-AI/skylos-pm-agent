@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { t } from "@/lib/i18n/es";
 
@@ -30,11 +30,13 @@ export function CompaniesFilterBar({
   const department = sp.get("department") ?? "";
   const city = sp.get("city") ?? "";
   const owner = sp.get("owner") ?? "";
-  const [q, setQ] = useState(sp.get("q") ?? "");
-
-  useEffect(() => {
-    setQ(sp.get("q") ?? "");
-  }, [sp]);
+  const spQ = sp.get("q") ?? "";
+  const [q, setQ] = useState(spQ);
+  const [lastSpQ, setLastSpQ] = useState(spQ);
+  if (spQ !== lastSpQ) {
+    setLastSpQ(spQ);
+    setQ(spQ);
+  }
 
   function update(key: string, value: string) {
     const next = new URLSearchParams(sp.toString());

@@ -426,9 +426,10 @@ function DealCard({
   deal: PipelineDealRow;
   dragging?: boolean;
 }) {
+  const [mountedAt] = useState(() => Date.now());
   const daysInStage = Math.max(
     0,
-    Math.round((Date.now() - Date.parse(deal.updated_at)) / 86400000),
+    Math.round((mountedAt - Date.parse(deal.updated_at)) / 86400000),
   );
   return (
     <div

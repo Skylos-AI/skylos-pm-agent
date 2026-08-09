@@ -1,6 +1,6 @@
 ---
 name: skylos-pm
-description: Skylos project management — 31 tools for managing tasks, projects, pipeline, companies, outreach cadence, WA outreach automation, and daily briefings. Backed by Supabase. Responds in Spanish.
+description: Skylos project management — 32 tools for managing tasks, projects, pipeline, companies, outreach cadence, WA outreach automation, and daily briefings. Backed by Supabase. Responds in Spanish.
 metadata:
   openclaw:
     emoji: "📊"
@@ -30,6 +30,7 @@ Internal PM tools for the Skylos team backed by Supabase. Spanish, voice-friendl
 | 6b | `list-assets` | read | List registered outreach assets (proposals, decks, one-pagers) with external links |
 | 7 | `create-task` | write | New task, optionally tied to a project |
 | 8 | `update-task-status` | write | Move task through TODO → IN_PROGRESS → DONE |
+| 8b | `add-task-note` | write | Append a comment to a task (stamped as agent-written); web team sees it in the task thread |
 | 9 | `log-activity` | write | Record a call/meeting/message; optional `--outcome`, `--asset`, `--next-touch` to close the follow-up loop |
 | 10 | `update-pipeline-deal` | write | Move stage, set value, close date |
 | 11 | `create-reminder` | write | Schedule a future ping |
