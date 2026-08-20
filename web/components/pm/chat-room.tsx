@@ -350,9 +350,17 @@ export function ChatRoom({
         setBody(trimmed);
         return;
       }
-      setMessages((prev) =>
-        prev.map((m) => (m.id === optimisticId ? { ...m, id: res.data.id } : m)),
-      );
+      setMessages((prev) => {
+        // Race: realtime may have already delivered the real row before this
+        // response returned. If we blindly renamed the optimistic entry,
+        // both entries would end up with the real ID and appear twice.
+        if (prev.some((m) => m.id === res.data.id)) {
+          return prev.filter((m) => m.id !== optimisticId);
+        }
+        return prev.map((m) =>
+          m.id === optimisticId ? { ...m, id: res.data.id } : m,
+        );
+      });
     });
   }
 
