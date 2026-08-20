@@ -54,6 +54,7 @@ enum TaskStatus {
   TODO
   IN_PROGRESS
   BLOCKED
+  IN_REVIEW
   DONE
 }
 
@@ -161,6 +162,15 @@ enum ChatChannelKind {
   GROUP
 }
 
+enum NotificationKind {
+  CHAT_MENTION
+  TASK_ASSIGNED
+  TASK_REVIEW_REQUESTED
+  TASK_APPROVED
+  TASK_REJECTED
+  TASK_COMPLETED
+}
+
 // ===== CORE TABLES =====
 
 model User {
@@ -187,6 +197,9 @@ model User {
   chatChannels      ChatChannel[]        @relation("ChatChannelCreator")
   chatMemberships   ChatChannelMember[]
   chatMessages      ChatMessage[]
+  chatMentions      ChatMention[]
+  notifications     Notification[]
+  taskReviewAssignments TaskReviewer[]
 
   @@map("users")
 }
@@ -317,16 +330,35 @@ model Task {
   createdAt      DateTime     @default(now()) @map("created_at")
   updatedAt      DateTime     @updatedAt @map("updated_at")
 
-  project   Project?   @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  assignee  User       @relation("TaskAssignee", fields: [assigneeId], references: [id])
-  createdBy User?      @relation("TaskCreator", fields: [createdById], references: [id])
-  reminders Reminder[]
-  notes     TaskNote[]
+  project      Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  assignee     User           @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  createdBy    User?          @relation("TaskCreator", fields: [createdById], references: [id])
+  reminders    Reminder[]
+  notes        TaskNote[]
+  reviewers    TaskReviewer[]
+  chatMentions ChatMention[]
 
   @@index([assigneeId, status])
   @@index([dueDate])
   @@index([projectId])
   @@map("tasks")
+}
+
+model TaskReviewer {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  taskId     String    @map("task_id") @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  approvedAt DateTime? @map("approved_at")
+  rejectedAt DateTime? @map("rejected_at")
+  comment    String?   @db.Text
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, userId])
+  @@index([userId, approvedAt])
+  @@map("task_reviewers")
 }
 
 model TaskNote {
@@ -581,9 +613,53 @@ model ChatMessage {
   editedAt  DateTime? @map("edited_at")
   deletedAt DateTime? @map("deleted_at")
 
-  channel ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  author  User        @relation(fields: [authorId], references: [id])
+  channel  ChatChannel   @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  author   User          @relation(fields: [authorId], references: [id])
+  mentions ChatMention[]
 
   @@index([channelId, createdAt(sort: Desc)])
   @@map("chat_messages")
+}
+
+// A single @mention inside a chat message. Exactly one of user_id or task_id
+// is set — enforced by a CHECK constraint in the migration.
+model ChatMention {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  messageId         String   @map("message_id") @db.Uuid
+  mentionedUserId   String?  @map("mentioned_user_id") @db.Uuid
+  mentionedTaskId   String?  @map("mentioned_task_id") @db.Uuid
+  offset            Int
+  length            Int
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  message         ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  mentionedUser   User?       @relation(fields: [mentionedUserId], references: [id], onDelete: Cascade)
+  mentionedTask   Task?       @relation(fields: [mentionedTaskId], references: [id], onDelete: Cascade)
+  notifications   Notification[]
+
+  @@index([messageId])
+  @@index([mentionedUserId])
+  @@index([mentionedTaskId])
+  @@map("chat_mentions")
+}
+
+// In-app notification. `kind` says why; the optional foreign keys carry the
+// context so the UI can link back to the source.
+model Notification {
+  id              String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String           @map("user_id") @db.Uuid
+  kind            NotificationKind
+  body            String           @db.Text
+  sourceMessageId String?          @map("source_message_id") @db.Uuid
+  sourceMentionId String?          @map("source_mention_id") @db.Uuid
+  sourceTaskId    String?          @map("source_task_id") @db.Uuid
+  sourceUserId    String?          @map("source_user_id") @db.Uuid
+  readAt          DateTime?        @map("read_at")
+  createdAt       DateTime         @default(now()) @map("created_at")
+
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceMention ChatMention? @relation(fields: [sourceMentionId], references: [id], onDelete: SetNull)
+
+  @@index([userId, readAt, createdAt(sort: Desc)])
+  @@map("notifications")
 }
