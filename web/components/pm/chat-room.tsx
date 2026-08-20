@@ -683,32 +683,32 @@ function MessageBody({
       nodes.push(body.slice(pos, m.offset));
     }
     const label = body.slice(m.offset, m.offset + m.length);
+    const pillClass = `inline-flex items-center gap-1 px-1.5 py-px rounded font-medium cursor-pointer hover:underline ${
+      mine
+        ? "bg-white/25 text-white hover:bg-white/35"
+        : "bg-[var(--brand-blue)]/12 text-[var(--brand-blue)] hover:bg-[var(--brand-blue)]/20"
+    }`;
     if (m.mentioned_task) {
       nodes.push(
         <Link
           key={`m-${i}`}
           href={`/tasks#task-${m.mentioned_task.id}`}
-          className={`inline-flex items-center gap-1 px-1.5 py-px rounded font-medium ${
-            mine
-              ? "bg-white/25 text-white"
-              : "bg-[var(--brand-blue)]/12 text-[var(--brand-blue)]"
-          }`}
+          title={`Ir a la tarea: ${m.mentioned_task.title}`}
+          className={pillClass}
         >
           <CheckSquare size={11} /> {label.replace(/^@/, "")}
         </Link>,
       );
     } else if (m.mentioned_user) {
       nodes.push(
-        <span
+        <Link
           key={`m-${i}`}
-          className={`inline-flex items-center px-1.5 py-px rounded font-medium ${
-            mine
-              ? "bg-white/25 text-white"
-              : "bg-[var(--brand-blue)]/12 text-[var(--brand-blue)]"
-          }`}
+          href={`/tasks?assignee=${m.mentioned_user.id}`}
+          title={`Ver tareas de ${m.mentioned_user.full_name}`}
+          className={pillClass}
         >
           {label}
-        </span>,
+        </Link>,
       );
     } else {
       // Mention row exists but its target was deleted — fall back to plain text.
