@@ -162,7 +162,7 @@ const sendMessageSchema = z.object({
 });
 
 export async function sendChatMessage(
-  input: z.infer<typeof sendMessageSchema>,
+  input: z.input<typeof sendMessageSchema>,
 ): Promise<Envelope<{ id: string }>> {
   const parsed = sendMessageSchema.safeParse(input);
   if (!parsed.success) {

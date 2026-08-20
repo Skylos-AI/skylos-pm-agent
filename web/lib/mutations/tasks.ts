@@ -30,8 +30,10 @@ type Envelope<T> =
   | { ok: true; data: T; agent_log_id: string | null }
   | { ok: false; error: { code: string; message: string } };
 
+// Use z.input (not z.infer) so fields with .default(...) stay optional at the
+// call site — existing callers that don't pass reviewerIds keep compiling.
 export async function createTask(
-  input: z.infer<typeof createSchema>,
+  input: z.input<typeof createSchema>,
 ): Promise<Envelope<{ id: string }>> {
   const parsed = createSchema.safeParse(input);
   if (!parsed.success) {
