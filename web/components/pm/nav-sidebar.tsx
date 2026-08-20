@@ -20,6 +20,8 @@ import {
   MessagesSquare,
 } from "lucide-react";
 import { t } from "@/lib/i18n/es";
+import { NotificationsBell } from "@/components/pm/notifications-bell";
+import type { NotificationRow } from "@/lib/data/notifications";
 
 const nav = [
   { href: "/dashboard", label: t.nav.dashboard, icon: LayoutDashboard },
@@ -38,11 +40,17 @@ const nav = [
 ];
 
 export function NavSidebar({
+  userId,
   userFullName,
   userEmail,
+  initialNotifications,
+  initialUnreadCount,
 }: {
+  userId: string;
   userFullName: string;
   userEmail: string;
+  initialNotifications: NotificationRow[];
+  initialUnreadCount: number;
 }) {
   const pathname = usePathname();
   const initials = userFullName
@@ -69,6 +77,13 @@ export function NavSidebar({
         </p>
       </div>
       <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto pb-4">
+        <div className="pb-1">
+          <NotificationsBell
+            userId={userId}
+            initialNotifications={initialNotifications}
+            initialUnreadCount={initialUnreadCount}
+          />
+        </div>
         {nav.map((item) => {
           const active =
             pathname === item.href || pathname.startsWith(item.href + "/");

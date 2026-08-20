@@ -33,15 +33,17 @@ export function PaceBadge({ pace }: { pace: Pace }) {
 export function TaskStatusPill({
   status,
 }: {
-  status: "TODO" | "IN_PROGRESS" | "BLOCKED" | "DONE";
+  status: "TODO" | "IN_PROGRESS" | "BLOCKED" | "IN_REVIEW" | "DONE";
 }) {
   const tone: PillTone =
     status === "DONE"
       ? "cyan"
       : status === "BLOCKED"
         ? "magenta"
-        : status === "IN_PROGRESS"
-          ? "blue"
-          : "neutral";
+        : status === "IN_REVIEW"
+          ? "cyan"
+          : status === "IN_PROGRESS"
+            ? "blue"
+            : "neutral";
   return <Pill tone={tone}>{t.status[status]}</Pill>;
 }

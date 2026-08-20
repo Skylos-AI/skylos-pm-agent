@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatDate, formatDateTime } from "@/lib/format/date";
 import { t } from "@/lib/i18n/es";
@@ -10,6 +11,9 @@ import {
   createTask,
   updateTaskDescription,
   updateTaskStatus,
+  setTaskReviewers,
+  approveTaskAsReviewer,
+  rejectTaskAsReviewer,
 } from "@/lib/mutations/tasks";
 import {
   createTaskNote,
@@ -24,6 +28,7 @@ import type {
   MyTaskRow,
   TaskNoteRow,
   TaskReminderRow,
+  TaskReviewerRow,
   TaskStatus,
 } from "@/lib/types/tasks";
 
@@ -52,6 +57,11 @@ const TABS = [
     match: (r: MyTaskRow) => r.status === "BLOCKED",
   },
   {
+    key: "IN_REVIEW",
+    label: t.tasks.tabInReview,
+    match: (r: MyTaskRow) => r.status === "IN_REVIEW",
+  },
+  {
     key: "OVERDUE",
     label: t.tasks.tabOverdue,
     match: (r: MyTaskRow) => isOverdue(r),
@@ -61,19 +71,31 @@ const TABS = [
     label: t.tasks.tabDone,
     match: (r: MyTaskRow) => r.status === "DONE",
   },
+  // Special tab: draws from `awaitingReviewTasks` prop, not from initialTasks.
+  { key: "AWAITING_MY_REVIEW", label: t.tasks.tabAwaitingMyReview, match: () => false },
 ] as const;
 
-const STATUSES: TaskStatus[] = ["TODO", "IN_PROGRESS", "BLOCKED", "DONE"];
+const STATUSES: TaskStatus[] = [
+  "TODO",
+  "IN_PROGRESS",
+  "BLOCKED",
+  "IN_REVIEW",
+  "DONE",
+];
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH", "URGENT"] as const;
 
 export function TasksQueue({
   initialTasks,
+  awaitingReviewTasks,
   teamMembers,
   currentUserId,
+  scope,
 }: {
   initialTasks: MyTaskRow[];
+  awaitingReviewTasks: MyTaskRow[];
   teamMembers: { id: string; full_name: string }[];
   currentUserId: string;
+  scope: "mine" | "all" | string;
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<(typeof TABS)[number]["key"]>("TODO");
@@ -95,12 +117,42 @@ export function TasksQueue({
   const [richHours, setRichHours] = useState("");
   const [richDescription, setRichDescription] = useState("");
   const [richResources, setRichResources] = useState("");
+  const [richReviewers, setRichReviewers] = useState<string[]>([]);
   const [richError, setRichError] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
+    // The review tab bypasses the initialTasks list — it always shows tasks
+    // where the current user is a pending reviewer, regardless of scope.
+    if (tab === "AWAITING_MY_REVIEW") return awaitingReviewTasks;
     const def = TABS.find((tt) => tt.key === tab);
     return def ? initialTasks.filter(def.match) : initialTasks;
-  }, [initialTasks, tab]);
+  }, [initialTasks, awaitingReviewTasks, tab]);
+
+  // Group tasks by project so the same visual table is chunked into
+  // per-project sections. "Sin proyecto" collects the loose ones.
+  const grouped = useMemo(() => {
+    const groups = new Map<
+      string,
+      { id: string | null; name: string; rows: MyTaskRow[] }
+    >();
+    for (const row of filtered) {
+      const key = row.project?.id ?? "__none";
+      const g = groups.get(key);
+      if (g) g.rows.push(row);
+      else
+        groups.set(key, {
+          id: row.project?.id ?? null,
+          name: row.project?.name ?? t.tasks.groupNoProject,
+          rows: [row],
+        });
+    }
+    // Named projects first (alphabetical), "Sin proyecto" last.
+    return Array.from(groups.values()).sort((a, b) => {
+      if (a.id === null) return 1;
+      if (b.id === null) return -1;
+      return a.name.localeCompare(b.name);
+    });
+  }, [filtered]);
 
   const allSelected =
     filtered.length > 0 && filtered.every((r) => selected.has(r.id));
@@ -173,6 +225,7 @@ export function TasksQueue({
         estimatedHours: richHours ? Number(richHours) : undefined,
         description: richDescription.trim() || undefined,
         resources: richResources.trim() || undefined,
+        reviewerIds: richReviewers,
       });
       if (!res.ok) {
         setRichError(res.error.message);
@@ -186,14 +239,21 @@ export function TasksQueue({
       setRichHours("");
       setRichDescription("");
       setRichResources("");
+      setRichReviewers([]);
       router.refresh();
     });
   }
 
   function counts(key: (typeof TABS)[number]["key"]) {
+    if (key === "AWAITING_MY_REVIEW") return awaitingReviewTasks.length;
     const def = TABS.find((tt) => tt.key === key);
     if (!def) return 0;
     return initialTasks.filter(def.match).length;
+  }
+
+  function scopeHref(next: "mine" | "all" | string): string {
+    if (next === "mine") return "/tasks";
+    return `/tasks?assignee=${encodeURIComponent(next)}`;
   }
 
   return (
@@ -239,8 +299,52 @@ export function TasksQueue({
         </button>
       </form>
 
+      <div className="flex items-center gap-2 flex-wrap text-xs">
+        <span className="text-[var(--brand-fg-muted)] uppercase tracking-wider">
+          Ver:
+        </span>
+        <Link
+          href={scopeHref("mine")}
+          className={`px-2.5 py-1 rounded-md border ${
+            scope === "mine"
+              ? "bg-[var(--brand-blue)] text-white border-[var(--brand-blue)]"
+              : "bg-white text-[var(--brand-fg-muted)] border-[var(--brand-border)] hover:text-[var(--brand-fg)]"
+          }`}
+        >
+          {t.tasks.scopeMine}
+        </Link>
+        <Link
+          href={scopeHref("all")}
+          className={`px-2.5 py-1 rounded-md border ${
+            scope === "all"
+              ? "bg-[var(--brand-blue)] text-white border-[var(--brand-blue)]"
+              : "bg-white text-[var(--brand-fg-muted)] border-[var(--brand-border)] hover:text-[var(--brand-fg)]"
+          }`}
+        >
+          {t.tasks.scopeAll}
+        </Link>
+        {teamMembers
+          .filter((m) => m.id !== currentUserId)
+          .map((m) => {
+            const on = scope === m.id;
+            return (
+              <Link
+                key={m.id}
+                href={scopeHref(m.id)}
+                className={`px-2.5 py-1 rounded-md border ${
+                  on
+                    ? "bg-[var(--brand-blue)] text-white border-[var(--brand-blue)]"
+                    : "bg-white text-[var(--brand-fg-muted)] border-[var(--brand-border)] hover:text-[var(--brand-fg)]"
+                }`}
+              >
+                {t.tasks.scopeUserPrefix} {m.full_name}
+              </Link>
+            );
+          })}
+      </div>
+
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex gap-1.5">
+        <div className="flex gap-1.5 flex-wrap">
           {TABS.map((tt) => {
             const on = tt.key === tab;
             return (
@@ -333,18 +437,35 @@ export function TasksQueue({
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--brand-border)]">
-              {filtered.map((row) => (
-                <TaskRow
-                  key={row.id}
-                  row={row}
-                  currentUserId={currentUserId}
-                  checked={selected.has(row.id)}
-                  onToggle={() => toggle(row.id)}
-                  onRefresh={() => router.refresh()}
-                />
-              ))}
-            </tbody>
+            {grouped.map((g) => (
+              <tbody
+                key={`g-${g.id ?? "none"}`}
+                className="divide-y divide-[var(--brand-border)]"
+              >
+                <tr className="bg-[var(--brand-bg)]">
+                  <td
+                    colSpan={7}
+                    className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--brand-fg-muted)]"
+                  >
+                    {g.name}
+                    <span className="ml-2 font-normal tabular-nums">
+                      ({g.rows.length})
+                    </span>
+                  </td>
+                </tr>
+                {g.rows.map((row) => (
+                  <TaskRow
+                    key={row.id}
+                    row={row}
+                    currentUserId={currentUserId}
+                    teamMembers={teamMembers}
+                    checked={selected.has(row.id)}
+                    onToggle={() => toggle(row.id)}
+                    onRefresh={() => router.refresh()}
+                  />
+                ))}
+              </tbody>
+            ))}
           </table>
         )}
       </div>
@@ -457,6 +578,49 @@ export function TasksQueue({
               className="mt-1 w-full text-sm border border-[var(--brand-border)] rounded-md px-3 py-2 resize-none focus:outline-none focus:border-[var(--brand-blue)]"
             />
           </label>
+          <div>
+            <span className="text-xs text-[var(--brand-fg-muted)] uppercase tracking-wide">
+              {t.tasks.reviewersLabel}
+            </span>
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              {teamMembers
+                .filter((m) => m.id !== richAssignee)
+                .map((m) => {
+                  const on = richReviewers.includes(m.id);
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() =>
+                        setRichReviewers((prev) =>
+                          on
+                            ? prev.filter((id) => id !== m.id)
+                            : [...prev, m.id],
+                        )
+                      }
+                      className={`px-2 py-1 text-xs rounded-full border transition ${
+                        on
+                          ? "bg-[var(--brand-blue)] text-white border-[var(--brand-blue)]"
+                          : "bg-white text-[var(--brand-fg-muted)] border-[var(--brand-border)] hover:text-[var(--brand-fg)]"
+                      }`}
+                    >
+                      {m.full_name}
+                    </button>
+                  );
+                })}
+              {teamMembers.filter((m) => m.id !== richAssignee).length === 0 && (
+                <span className="text-xs text-[var(--brand-fg-muted)] italic">
+                  Sin otros miembros disponibles.
+                </span>
+              )}
+            </div>
+            {richReviewers.length > 0 && (
+              <p className="mt-1 text-[11px] text-[var(--brand-fg-muted)]">
+                Al marcar la tarea como hecha, necesitará la aprobación de
+                estos revisores antes de cerrarse.
+              </p>
+            )}
+          </div>
           {richError && (
             <p className="text-sm text-[var(--brand-magenta)]">{richError}</p>
           )}
@@ -486,12 +650,14 @@ export function TasksQueue({
 function TaskRow({
   row,
   currentUserId,
+  teamMembers,
   checked,
   onToggle,
   onRefresh,
 }: {
   row: MyTaskRow;
   currentUserId: string;
+  teamMembers: { id: string; full_name: string }[];
   checked: boolean;
   onToggle: () => void;
   onRefresh: () => void;
@@ -553,10 +719,20 @@ function TaskRow({
   const hasResources = Boolean(row.resources && row.resources.trim().length);
   const overdue = isOverdue(row);
   const hasNote = Boolean(description && description.trim().length);
+  const reviewers = row.reviewers ?? [];
+  const reviewerCount = reviewers.length;
+  const pendingReviewers = reviewers.filter((r) => !r.approved_at).length;
+  const myReviewerRow = reviewers.find((r) => r.user_id === currentUserId);
+  const iAmPendingReviewer = Boolean(
+    myReviewerRow && !myReviewerRow.approved_at,
+  );
 
   return (
     <>
-      <tr className="hover:bg-[var(--brand-bg)] transition">
+      <tr
+        id={`task-${row.id}`}
+        className="hover:bg-[var(--brand-bg)] transition scroll-mt-24 target:bg-[var(--brand-blue)]/[0.06]"
+      >
         <td className="px-3 py-3 w-8">
           <input
             type="checkbox"
@@ -600,7 +776,23 @@ function TaskRow({
               {reminderCount > 0 && (
                 <span className="ml-1 tabular-nums">⏰{reminderCount}</span>
               )}
+              {reviewerCount > 0 && (
+                <span
+                  className={`ml-1 tabular-nums ${
+                    pendingReviewers > 0
+                      ? "text-[var(--brand-magenta)]"
+                      : "text-[var(--brand-fg-muted)]"
+                  }`}
+                >
+                  ✓ {reviewerCount - pendingReviewers}/{reviewerCount}
+                </span>
+              )}
             </button>
+            {iAmPendingReviewer && (
+              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--brand-blue)]/10 text-[var(--brand-blue)] border border-[var(--brand-blue)]/30">
+                revisá esto
+              </span>
+            )}
             {!hasNote && !editingNote && (
               <button
                 type="button"
@@ -715,6 +907,14 @@ function TaskRow({
       {showThread && (
         <tr className="bg-[var(--brand-bg)]">
           <td colSpan={7} className="px-4 py-3 space-y-5">
+            <ReviewersPanel
+              taskId={row.id}
+              assigneeId={row.assignee?.id ?? null}
+              reviewers={reviewers}
+              teamMembers={teamMembers}
+              currentUserId={currentUserId}
+              onRefresh={onRefresh}
+            />
             <NotesThread
               taskId={row.id}
               notes={notes}
@@ -730,6 +930,204 @@ function TaskRow({
         </tr>
       )}
     </>
+  );
+}
+
+function ReviewersPanel({
+  taskId,
+  assigneeId,
+  reviewers,
+  teamMembers,
+  currentUserId,
+  onRefresh,
+}: {
+  taskId: string;
+  assigneeId: string | null;
+  reviewers: TaskReviewerRow[];
+  teamMembers: { id: string; full_name: string }[];
+  currentUserId: string;
+  onRefresh: () => void;
+}) {
+  const [err, setErr] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [approveComment, setApproveComment] = useState("");
+  const canManage =
+    assigneeId === currentUserId || reviewers.length === 0;
+  const myRow = reviewers.find((r) => r.user_id === currentUserId);
+  const iAmPending = Boolean(myRow && !myRow.approved_at);
+
+  function approve() {
+    setErr(null);
+    startTransition(async () => {
+      const res = await approveTaskAsReviewer({
+        taskId,
+        comment: approveComment.trim() || undefined,
+      });
+      if (!res.ok) {
+        setErr(res.error.message);
+        return;
+      }
+      setApproveComment("");
+      onRefresh();
+    });
+  }
+
+  function reject() {
+    const comment = window.prompt(t.tasks.reviewerRejectPrompt);
+    if (!comment || !comment.trim()) return;
+    setErr(null);
+    startTransition(async () => {
+      const res = await rejectTaskAsReviewer({
+        taskId,
+        comment: comment.trim(),
+      });
+      if (!res.ok) {
+        setErr(res.error.message);
+        return;
+      }
+      onRefresh();
+    });
+  }
+
+  function toggleReviewer(userId: string) {
+    if (userId === assigneeId) return; // guard: assignee can't be reviewer
+    const next = reviewers.some((r) => r.user_id === userId)
+      ? reviewers.filter((r) => r.user_id !== userId).map((r) => r.user_id)
+      : [...reviewers.map((r) => r.user_id), userId];
+    setErr(null);
+    startTransition(async () => {
+      const res = await setTaskReviewers({ taskId, reviewerIds: next });
+      if (!res.ok) {
+        setErr(res.error.message);
+        return;
+      }
+      onRefresh();
+    });
+  }
+
+  return (
+    <div className="max-w-2xl space-y-2">
+      <div className="flex items-center gap-2">
+        <span className="text-xs uppercase tracking-wider text-[var(--brand-fg-muted)]">
+          {t.tasks.reviewersLabel}
+        </span>
+        {canManage && (
+          <button
+            type="button"
+            onClick={() => setPickerOpen((s) => !s)}
+            disabled={pending}
+            className="text-xs text-[var(--brand-blue)] hover:underline disabled:opacity-50"
+          >
+            {pickerOpen ? "Cerrar" : t.tasks.reviewersPick}
+          </button>
+        )}
+      </div>
+
+      {pickerOpen && canManage && (
+        <div className="flex flex-wrap gap-1.5">
+          {teamMembers
+            .filter((m) => m.id !== assigneeId)
+            .map((m) => {
+              const on = reviewers.some((r) => r.user_id === m.id);
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  disabled={pending}
+                  onClick={() => toggleReviewer(m.id)}
+                  className={`px-2 py-1 text-xs rounded-full border transition ${
+                    on
+                      ? "bg-[var(--brand-blue)] text-white border-[var(--brand-blue)]"
+                      : "bg-white text-[var(--brand-fg-muted)] border-[var(--brand-border)] hover:text-[var(--brand-fg)]"
+                  }`}
+                >
+                  {m.full_name}
+                </button>
+              );
+            })}
+        </div>
+      )}
+
+      {reviewers.length === 0 ? (
+        <p className="text-xs italic text-[var(--brand-fg-muted)]">
+          {t.tasks.reviewersEmpty}
+        </p>
+      ) : (
+        <ul className="space-y-1">
+          {reviewers.map((r) => {
+            const name = r.user?.full_name ?? "—";
+            const state = r.approved_at
+              ? "approved"
+              : r.rejected_at
+                ? "rejected"
+                : "pending";
+            return (
+              <li
+                key={r.id}
+                className="flex items-center gap-2 text-xs text-[var(--brand-fg)]"
+              >
+                <span
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border ${
+                    state === "approved"
+                      ? "bg-[var(--brand-blue)]/10 text-[var(--brand-blue)] border-[var(--brand-blue)]/30"
+                      : state === "rejected"
+                        ? "bg-[var(--brand-magenta)]/10 text-[var(--brand-magenta)] border-[var(--brand-magenta)]/30"
+                        : "bg-white text-[var(--brand-fg-muted)] border-[var(--brand-border)]"
+                  }`}
+                >
+                  {state === "approved" && "✓"}
+                  {state === "rejected" && "✗"}
+                  {state === "pending" && "•"} {name}
+                </span>
+                {r.approved_at && (
+                  <span className="text-[10px] text-[var(--brand-fg-muted)]">
+                    {formatDateTime(r.approved_at)}
+                  </span>
+                )}
+                {r.comment && (
+                  <span className="text-[var(--brand-fg-muted)] italic truncate">
+                    "{r.comment}"
+                  </span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {iAmPending && (
+        <div className="pt-2 border-t border-[var(--brand-border)] space-y-2">
+          <input
+            value={approveComment}
+            onChange={(e) => setApproveComment(e.target.value)}
+            placeholder="Comentario opcional…"
+            className="w-full text-xs border border-[var(--brand-border)] rounded-md px-2 py-1.5 focus:outline-none focus:border-[var(--brand-blue)]"
+          />
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={approve}
+              disabled={pending}
+              className="px-3 py-1 text-xs rounded-md bg-[var(--brand-blue)] text-white disabled:opacity-50"
+            >
+              ✓ {t.tasks.reviewerApprove}
+            </button>
+            <button
+              type="button"
+              onClick={reject}
+              disabled={pending}
+              className="px-3 py-1 text-xs rounded-md bg-white text-[var(--brand-magenta)] border border-[var(--brand-magenta)]/30 hover:bg-[var(--brand-magenta)]/5 disabled:opacity-50"
+            >
+              ✗ {t.tasks.reviewerReject}
+            </button>
+          </div>
+        </div>
+      )}
+      {err && (
+        <p className="text-xs text-[var(--brand-magenta)]">{err}</p>
+      )}
+    </div>
   );
 }
 

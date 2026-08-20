@@ -17,6 +17,16 @@ export type ChatChannelListItem = {
   unread_count: number;
 };
 
+export type ChatMentionRow = {
+  id: string;
+  offset: number;
+  length: number;
+  mentioned_user_id: string | null;
+  mentioned_task_id: string | null;
+  mentioned_user: { id: string; full_name: string } | null;
+  mentioned_task: { id: string; title: string } | null;
+};
+
 export type ChatMessageRow = {
   id: string;
   channel_id: string;
@@ -26,6 +36,7 @@ export type ChatMessageRow = {
   edited_at: string | null;
   deleted_at: string | null;
   author: { id: string; full_name: string } | null;
+  mentions: ChatMentionRow[];
 };
 
 export type ChatChannelDetail = {
@@ -182,7 +193,7 @@ export async function getChatMessages(
   const { data } = await supa
     .from("chat_messages")
     .select(
-      "id, channel_id, author_id, body, created_at, edited_at, deleted_at, author:users(id, full_name)",
+      "id, channel_id, author_id, body, created_at, edited_at, deleted_at, author:users(id, full_name), mentions:chat_mentions(id, offset, length, mentioned_user_id, mentioned_task_id, mentioned_user:users!chat_mentions_mentioned_user_id_fkey(id, full_name), mentioned_task:tasks!chat_mentions_mentioned_task_id_fkey(id, title))",
     )
     .eq("channel_id", channelId)
     .order("created_at", { ascending: false })

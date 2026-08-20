@@ -3,6 +3,10 @@ import { currentUser } from "@/lib/auth/current-user";
 import { isAllowed } from "@/lib/auth/allowlist";
 import { NavSidebar } from "@/components/pm/nav-sidebar";
 import { PageTransition } from "@/components/pm/page-transition";
+import {
+  getNotificationsForUser,
+  getUnreadNotificationCount,
+} from "@/lib/data/notifications";
 
 export default async function TeamLayout({
   children,
@@ -13,9 +17,19 @@ export default async function TeamLayout({
   if (!user || !isAllowed(user.email)) {
     redirect("/login");
   }
+  const [notifications, unreadCount] = await Promise.all([
+    getNotificationsForUser(user.id),
+    getUnreadNotificationCount(user.id),
+  ]);
   return (
     <div className="min-h-screen flex">
-      <NavSidebar userFullName={user.full_name} userEmail={user.email} />
+      <NavSidebar
+        userId={user.id}
+        userFullName={user.full_name}
+        userEmail={user.email}
+        initialNotifications={notifications}
+        initialUnreadCount={unreadCount}
+      />
       <main className="flex-1 min-w-0">
         <PageTransition>{children}</PageTransition>
       </main>

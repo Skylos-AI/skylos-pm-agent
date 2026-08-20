@@ -7,7 +7,13 @@ import { TaskStatusPill } from "@/components/pm/status-pill";
 import { updateTaskStatus } from "@/lib/mutations/tasks";
 import type { ProjectTask } from "@/lib/types/projects";
 
-const STATUSES = ["TODO", "IN_PROGRESS", "BLOCKED", "DONE"] as const;
+const STATUSES = [
+  "TODO",
+  "IN_PROGRESS",
+  "BLOCKED",
+  "IN_REVIEW",
+  "DONE",
+] as const;
 
 export function ProjectTaskRow({ task }: { task: ProjectTask }) {
   const [status, setStatus] = useState<ProjectTask["status"]>(task.status);

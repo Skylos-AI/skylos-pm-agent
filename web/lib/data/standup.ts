@@ -1,7 +1,7 @@
 import "server-only";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 
-const OPEN = ["TODO", "IN_PROGRESS", "BLOCKED"] as const;
+const OPEN = ["TODO", "IN_PROGRESS", "BLOCKED", "IN_REVIEW"] as const;
 
 export type StandupTask = {
   id: string;

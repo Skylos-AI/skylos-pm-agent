@@ -10,7 +10,7 @@ export type Pace = "on_track" | "behind" | "ahead" | "unknown";
 export type ProjectTask = {
   id: string;
   title: string;
-  status: "TODO" | "IN_PROGRESS" | "BLOCKED" | "DONE";
+  status: "TODO" | "IN_PROGRESS" | "BLOCKED" | "IN_REVIEW" | "DONE";
   priority: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
   due_date: string | null;
   estimated_hours: number | null;

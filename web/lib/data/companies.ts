@@ -233,7 +233,9 @@ export async function getCompanyDetail(
       status: string;
       title: string;
       project_id: string;
-    }[]).filter((t) => ["TODO", "IN_PROGRESS", "BLOCKED"].includes(t.status));
+    }[]).filter((t) =>
+      ["TODO", "IN_PROGRESS", "BLOCKED", "IN_REVIEW"].includes(t.status),
+    );
     projectsEnriched = (projects ?? []).map((p) => {
       const pt = (tasks ?? []).filter((t) => t.project_id === p.id);
       const done = pt.filter((t) => t.status === "DONE").length;

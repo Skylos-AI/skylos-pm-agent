@@ -121,7 +121,14 @@ function TaskList({ tasks }: { tasks: StandupTask[] }) {
       {tasks.map((task) => (
         <li key={task.id} className="py-3 flex items-start gap-3">
           <TaskStatusPill
-            status={task.status as "TODO" | "IN_PROGRESS" | "BLOCKED" | "DONE"}
+            status={
+              task.status as
+                | "TODO"
+                | "IN_PROGRESS"
+                | "BLOCKED"
+                | "IN_REVIEW"
+                | "DONE"
+            }
           />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate">{task.title}</p>

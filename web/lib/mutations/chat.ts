@@ -140,6 +140,17 @@ export async function createChatChannel(
   return { ok: true, data: { id: channel.id }, agent_log_id: agentLogId };
 }
 
+const mentionSchema = z
+  .object({
+    offset: z.number().int().min(0),
+    length: z.number().int().min(2), // at least "@" + one char
+    userId: z.string().uuid().optional(),
+    taskId: z.string().uuid().optional(),
+  })
+  .refine((m) => Boolean(m.userId) !== Boolean(m.taskId), {
+    message: "Cada mención debe apuntar a un usuario o a una tarea, no a ambos.",
+  });
+
 const sendMessageSchema = z.object({
   channelId: z.string().uuid(),
   body: z
@@ -147,6 +158,7 @@ const sendMessageSchema = z.object({
     .trim()
     .min(1, "El mensaje no puede estar vacío.")
     .max(4000, "El mensaje no puede superar 4000 caracteres."),
+  mentions: z.array(mentionSchema).max(20).default([]),
 });
 
 export async function sendChatMessage(
@@ -181,12 +193,21 @@ export async function sendChatMessage(
     };
   }
 
+  // Validate mention offsets against the body: the substring must start with "@".
+  // This catches stale mention arrays after the user edits the body between
+  // typing @ and sending.
+  const body = parsed.data.body;
+  const mentions = parsed.data.mentions.filter((m) => {
+    if (m.offset + m.length > body.length) return false;
+    return body.charAt(m.offset) === "@";
+  });
+
   const { data, error } = await supa
     .from("chat_messages")
     .insert({
       channel_id: parsed.data.channelId,
       author_id: user.id,
-      body: parsed.data.body,
+      body,
     })
     .select("id")
     .single();
@@ -199,6 +220,47 @@ export async function sendChatMessage(
         message: error?.message ?? "Error enviando mensaje.",
       },
     };
+  }
+
+  // Persist mentions and fan out notifications. Failures are best-effort:
+  // the message is already saved, so we log but don't roll it back.
+  const mentionedUserIds = new Set<string>();
+  if (mentions.length > 0) {
+    const rows = mentions.map((m) => ({
+      message_id: data.id,
+      mentioned_user_id: m.userId ?? null,
+      mentioned_task_id: m.taskId ?? null,
+      offset: m.offset,
+      length: m.length,
+    }));
+    const { data: mentionRows } = await supa
+      .from("chat_mentions")
+      .insert(rows)
+      .select("id, mentioned_user_id");
+
+    for (const r of mentionRows ?? []) {
+      if (r.mentioned_user_id && r.mentioned_user_id !== user.id) {
+        mentionedUserIds.add(r.mentioned_user_id);
+      }
+    }
+
+    if (mentionedUserIds.size > 0) {
+      const preview = body.length > 140 ? `${body.slice(0, 140)}…` : body;
+      const notifRows = Array.from(mentionedUserIds).map((uid) => {
+        const mentionRow = (mentionRows ?? []).find(
+          (r) => r.mentioned_user_id === uid,
+        );
+        return {
+          user_id: uid,
+          kind: "CHAT_MENTION" as const,
+          body: `${user.full_name ?? "Alguien"} te mencionó: "${preview}"`,
+          source_message_id: data.id,
+          source_mention_id: mentionRow?.id ?? null,
+          source_user_id: user.id,
+        };
+      });
+      await supa.from("notifications").insert(notifRows);
+    }
   }
 
   await supa

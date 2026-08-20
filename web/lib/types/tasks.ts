@@ -1,4 +1,9 @@
-export type TaskStatus = "TODO" | "IN_PROGRESS" | "BLOCKED" | "DONE";
+export type TaskStatus =
+  | "TODO"
+  | "IN_PROGRESS"
+  | "BLOCKED"
+  | "IN_REVIEW"
+  | "DONE";
 export type TaskPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 
 export type TaskNoteRow = {
@@ -17,6 +22,15 @@ export type TaskReminderRow = {
   created_by_agent: boolean;
 };
 
+export type TaskReviewerRow = {
+  id: string;
+  user_id: string;
+  approved_at: string | null;
+  rejected_at: string | null;
+  comment: string | null;
+  user: { id: string; full_name: string } | null;
+};
+
 export type MyTaskRow = {
   id: string;
   title: string;
@@ -30,4 +44,5 @@ export type MyTaskRow = {
   assignee: { id: string; full_name: string } | null;
   notes: TaskNoteRow[];
   reminders: TaskReminderRow[];
+  reviewers: TaskReviewerRow[];
 };

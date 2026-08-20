@@ -1,7 +1,7 @@
 import "server-only";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 
-const OPEN = ["TODO", "IN_PROGRESS", "BLOCKED"];
+const OPEN = ["TODO", "IN_PROGRESS", "BLOCKED", "IN_REVIEW"];
 
 export type DashboardStats = {
   open_tasks: number;

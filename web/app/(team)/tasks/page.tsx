@@ -1,15 +1,43 @@
 import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth/current-user";
-import { getMyTasks, getActiveTeamMembers } from "@/lib/data/tasks";
+import {
+  getTasks,
+  getTasksAwaitingMyReview,
+  getActiveTeamMembers,
+} from "@/lib/data/tasks";
 import { TasksQueue } from "@/components/pm/tasks-queue";
 import { t } from "@/lib/i18n/es";
 
-export default async function TasksPage() {
+// `assignee` search param controls the scope:
+//   (absent)        → my tasks
+//   "all"           → everyone's tasks
+//   "<user-uuid>"   → that user's tasks
+export default async function TasksPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ assignee?: string }>;
+}) {
   const user = await currentUser();
   if (!user) redirect("/login");
-  const [tasks, teamMembers] = await Promise.all([
-    getMyTasks(user.id),
-    getActiveTeamMembers(),
+  const { assignee } = await searchParams;
+
+  const teamMembers = await getActiveTeamMembers();
+  const validAssigneeIds = new Set(teamMembers.map((m) => m.id));
+  const scope: "mine" | "all" | string =
+    !assignee
+      ? "mine"
+      : assignee === "all"
+        ? "all"
+        : validAssigneeIds.has(assignee)
+          ? assignee
+          : "mine";
+
+  const assigneeIdForQuery =
+    scope === "all" ? null : scope === "mine" ? user.id : (scope as string);
+
+  const [tasks, awaitingReview] = await Promise.all([
+    getTasks(assigneeIdForQuery),
+    getTasksAwaitingMyReview(user.id),
   ]);
   const openCount = tasks.filter((row) => row.status !== "DONE").length;
 
@@ -25,8 +53,10 @@ export default async function TasksPage() {
       </header>
       <TasksQueue
         initialTasks={tasks}
+        awaitingReviewTasks={awaitingReview}
         teamMembers={teamMembers}
         currentUserId={user.id}
+        scope={scope}
       />
     </div>
   );

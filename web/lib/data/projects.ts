@@ -4,7 +4,7 @@ import type { Pace, ProjectStatus, ProjectTask } from "@/lib/types/projects";
 
 export type { Pace, ProjectStatus, ProjectTask };
 
-const OPEN = ["TODO", "IN_PROGRESS", "BLOCKED"] as const;
+const OPEN = ["TODO", "IN_PROGRESS", "BLOCKED", "IN_REVIEW"] as const;
 
 export type ProjectListRow = {
   id: string;

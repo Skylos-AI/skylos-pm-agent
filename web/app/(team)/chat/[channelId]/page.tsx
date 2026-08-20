@@ -1,6 +1,10 @@
 import { notFound, redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth/current-user";
 import { getChatChannel, getChatMessages } from "@/lib/data/chat";
+import {
+  getActiveTeamMembers,
+  getOpenTasksForMention,
+} from "@/lib/data/tasks";
 import { ChatRoom } from "@/components/pm/chat-room";
 
 export default async function ChatChannelPage({
@@ -14,7 +18,11 @@ export default async function ChatChannelPage({
 
   const channel = await getChatChannel(channelId, user.id);
   if (!channel) notFound();
-  const initialMessages = await getChatMessages(channelId, 100);
+  const [initialMessages, mentionUsers, mentionTasks] = await Promise.all([
+    getChatMessages(channelId, 100),
+    getActiveTeamMembers(),
+    getOpenTasksForMention(),
+  ]);
 
   const title =
     channel.kind === "GROUP"
@@ -30,6 +38,8 @@ export default async function ChatChannelPage({
       members={channel.members}
       currentUserId={user.id}
       initialMessages={initialMessages}
+      mentionUsers={mentionUsers}
+      mentionTasks={mentionTasks}
     />
   );
 }
